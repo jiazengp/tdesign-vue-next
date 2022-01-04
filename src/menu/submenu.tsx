@@ -168,7 +168,7 @@ export default defineComponent({
       const icon = renderTNodeJSX(this, 'icon');
       const child = renderContent(this, 'default', 'content');
       let paddingLeft = 44;
-      if (/submenu/i.test(this.$parent.$vnode?.tag)) {
+      if (/submenu/i.test(this.$parent?.$.type?.name)) {
         paddingLeft += 16;
       }
 
