@@ -1,9 +1,11 @@
 import { ref, computed, watch } from 'vue';
 import { CalendarIcon as TdCalendarIcon } from 'tdesign-icons-vue-next';
+import omit from 'lodash/omit';
 
 import { useTNodeJSX } from '../../hooks/tnode';
 import { useGlobalIcon } from '../../hooks/useGlobalIcon';
 import { usePrefixClass, useConfig } from '../../hooks/useConfig';
+import { useReadonly } from '../../../src/hooks/useReadonly';
 
 import { TdDateRangePickerProps, DateValue } from '../type';
 import { isValidDate, formatDate, getDefaultFormat, parseToDayjs } from '../../_common/js/date-picker/format';
@@ -35,15 +37,17 @@ export default function useRange(props: TdDateRangePickerProps) {
   const isHoverCell = ref(false);
   const activeIndex = ref(0); // 确定当前选中的输入框序号
   const inputValue = ref(formatDate(props.value, { format: formatRef.value.format })); // 未真正选中前可能不断变更输入框的内容
+  const isReadOnly = useReadonly();
 
   // input 设置
   const rangeInputProps = computed(() => ({
     ...props.rangeInputProps,
     size: props.size,
     ref: inputRef,
+    borderless: props.borderless,
     clearable: props.clearable,
     prefixIcon: () => renderTNodeJSX('prefixIcon'),
-    readonly: !props.allowInput,
+    readonly: isReadOnly.value || !props.allowInput,
     separator: props.separator || globalConfig.value.rangeSeparator,
     placeholder: props.placeholder || globalConfig.value.placeholder[props.mode],
     activeIndex: popupVisible.value ? activeIndex.value : undefined,
@@ -116,12 +120,16 @@ export default function useRange(props: TdDateRangePickerProps) {
   // popup 设置
   const popupProps = computed(() => ({
     expandAnimation: true,
-    ...props.popupProps,
+    ...omit(props.popupProps, 'on-visible-change'),
     overlayInnerStyle: props.popupProps?.overlayInnerStyle ?? { width: 'auto' },
     overlayClassName: [props.popupProps?.overlayClassName, `${COMPONENT_NAME.value}__panel-container`],
     onVisibleChange: (visible: boolean, context: any) => {
+      if (isReadOnly.value) return;
+
       // 这里劫持了进一步向 popup 传递的 onVisibleChange 事件，为了保证可以在 Datepicker 中使用 popupProps.onVisibleChange，故此处理
       props.popupProps?.onVisibleChange?.(visible, context);
+      props.popupProps?.['on-visible-change']?.(visible, context);
+
       // 输入框点击不关闭面板
       if (context.trigger === 'trigger-element-click') {
         const indexMap = { 0: 'first', 1: 'second' };
@@ -145,7 +153,8 @@ export default function useRange(props: TdDateRangePickerProps) {
       if (!isValidDate(value, formatRef.value.format)) return;
 
       inputValue.value = formatDate(value, {
-        format: formatRef.value.format,
+        format: formatRef.value.valueType,
+        targetFormat: formatRef.value.format,
       });
     },
     {
@@ -161,6 +170,7 @@ export default function useRange(props: TdDateRangePickerProps) {
         isMountedRef.value = true;
         return;
       }
+      if (!popupVisible.value) return;
       const indexMap = { 0: 'first', 1: 'second' };
       inputRef.value?.focus?.({ position: indexMap[index] });
     },

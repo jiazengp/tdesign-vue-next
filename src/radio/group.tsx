@@ -19,7 +19,8 @@ import throttle from 'lodash/throttle';
 
 import props from './radio-group-props';
 import { RadioOptionObj, RadioOption } from './type';
-import Radio from './radio';
+import TRadio from './radio';
+import TRadioButton from './radio-button';
 import { RadioGroupInjectionKey } from './constants';
 import { usePrefixClass, useCommonClassName } from '../hooks/useConfig';
 import useVModel from '../hooks/useVModel';
@@ -47,7 +48,7 @@ export default defineComponent({
 
     const checkedClassName = computed(() => `.${radioBtnName.value}.${STATUS.value.checked}`);
 
-    const barStyle = ref({ width: '0px', left: '0px' });
+    const barStyle = ref({ width: '0px', height: '0px', left: '0px', top: '0px', 'transition-property': 'none' });
 
     const calcDefaultBarStyle = () => {
       const div = document.createElement('div');
@@ -56,26 +57,46 @@ export default defineComponent({
       document.body.appendChild(div);
 
       const defaultCheckedRadio: HTMLElement = div.querySelector(checkedClassName.value);
-      const { offsetWidth, offsetLeft } = defaultCheckedRadio;
-      barStyle.value = { width: `${offsetWidth}px`, left: `${offsetLeft}px` };
+      const { offsetWidth, offsetHeight, offsetLeft, offsetTop } = defaultCheckedRadio;
+      barStyle.value = {
+        ...barStyle.value,
+        width: `${offsetWidth}px`,
+        height: `${offsetHeight}px`,
+        left: `${offsetLeft}px`,
+        top: `${offsetTop}px`,
+      };
       document.body.removeChild(div);
     };
 
-    const calcBarStyle = () => {
+    const calcBarStyle = (disableAnimation = false) => {
       if (props.variant === 'outline') return;
 
       const checkedRadio: HTMLElement = radioGroupRef.value.querySelector(checkedClassName.value);
+
+      const transitionProperty = disableAnimation ? 'none' : 'all';
       if (!checkedRadio) {
-        barStyle.value = { width: '0px', left: '0px' };
+        barStyle.value = {
+          'transition-property': transitionProperty,
+          width: '0px',
+          height: '9px',
+          left: '0px',
+          top: '0px',
+        };
         return;
       }
 
-      const { offsetWidth, offsetLeft } = checkedRadio;
+      const { offsetWidth, offsetHeight, offsetLeft, offsetTop } = checkedRadio;
       // current node is not rendered，fallback to default render
       if (!offsetWidth) {
         calcDefaultBarStyle();
       } else {
-        barStyle.value = { width: `${offsetWidth}px`, left: `${offsetLeft}px` };
+        barStyle.value = {
+          'transition-property': transitionProperty,
+          width: `${offsetWidth}px`,
+          height: `${offsetHeight}px`,
+          left: `${offsetLeft}px`,
+          top: `${offsetTop}px`,
+        };
       }
     };
 
@@ -87,7 +108,7 @@ export default defineComponent({
     });
 
     onMounted(() => {
-      calcBarStyle();
+      calcBarStyle(true);
       useResizeObserver(
         radioGroupRef,
         throttle(async () => {
@@ -123,12 +144,13 @@ export default defineComponent({
     });
     /** calculate bar style end */
 
-    const { name, disabled } = toRefs(props);
+    const { name, disabled, readonly } = toRefs(props);
     provide(
       RadioGroupInjectionKey,
       reactive({
         name,
         disabled,
+        readonly,
         value: innerValue,
         allowUncheck: props.allowUncheck,
         setValue: setInnerValue,
@@ -147,8 +169,9 @@ export default defineComponent({
         if (isNumber(option) || isString(option)) {
           opt = { value: option, label: option.toString() };
         }
+        const RadioComponent = props.theme === 'button' ? TRadioButton : TRadio;
         return (
-          <Radio
+          <RadioComponent
             key={`radio-group-options-${opt.value}-${Math.random()}`}
             name={props.name}
             checked={innerValue.value === opt.value}
@@ -156,7 +179,7 @@ export default defineComponent({
             value={opt.value}
           >
             {isFunction(opt.label) ? opt.label(h) : opt.label}
-          </Radio>
+          </RadioComponent>
         );
       });
     };

@@ -1,17 +1,19 @@
 import { computed, defineComponent } from 'vue';
-import { UploadIcon } from 'tdesign-icons-vue-next';
+import { UploadIcon as TdUploadIcon } from 'tdesign-icons-vue-next';
 import props from './props';
 import NormalFile from './themes/normal-file';
 import DraggerFile from './themes/dragger-file';
 import ImageCard from './themes/image-card';
 import MultipleFlowList from './themes/multiple-flow-list';
-import useUpload from './hooks/useUpload';
 import Button from '../button';
 import { CommonDisplayFileProps, UploadProps } from './interface';
-import { UploadDragEvents } from './hooks/useDrag';
 import CustomFile from './themes/custom-file';
+
+import { UploadDragEvents } from './hooks/useDrag';
+import useUpload from './hooks/useUpload';
 import { useContent, useTNodeJSX } from '../hooks/tnode';
-import { useFormDisabled } from '../form/hooks';
+import { useDisabled } from '../hooks/useDisabled';
+import { useGlobalIcon } from '../hooks/useGlobalIcon';
 
 export default defineComponent({
   name: 'TUpload',
@@ -41,8 +43,17 @@ export default defineComponent({
       onPasteFileChange,
       triggerUpload,
       cancelUpload,
+      uploadFilePercent,
     } = useUpload(props);
-    const disabled = useFormDisabled();
+    const disabled = useDisabled();
+
+    const { UploadIcon } = useGlobalIcon({
+      UploadIcon: TdUploadIcon,
+    });
+
+    const triggerUploadButtonText = computed(
+      () => props.triggerButtonProps?.default || props.triggerButtonProps?.content || triggerUploadText.value,
+    );
 
     expose({
       upload: inputRef.value,
@@ -50,6 +61,7 @@ export default defineComponent({
       triggerUpload,
       uploadFiles,
       cancelUpload,
+      uploadFilePercent,
     });
 
     const renderTrigger = () => {
@@ -57,13 +69,13 @@ export default defineComponent({
         if (props.theme === 'file-input') {
           return (
             <Button disabled={disabled.value} variant="outline" {...props.triggerButtonProps}>
-              {triggerUploadText.value}
+              {triggerUploadButtonText.value}
             </Button>
           );
         }
         return (
           <Button disabled={disabled.value} variant="outline" icon={() => <UploadIcon />} {...props.triggerButtonProps}>
-            {triggerUploadText.value}
+            {triggerUploadButtonText.value}
           </Button>
         );
       };
@@ -75,6 +87,7 @@ export default defineComponent({
     };
 
     const commonDisplayFileProps = computed<CommonDisplayFileProps>(() => ({
+      accept: props.accept,
       files: uploadValue.value,
       toUploadFiles: toUploadFiles.value,
       displayFiles: displayFiles.value,
@@ -97,6 +110,7 @@ export default defineComponent({
       onRemove: onInnerRemove,
       uploadPastedFiles: props.uploadPastedFiles,
       onPasteFileChange: onPasteFileChange,
+      imageViewerProps: props.imageViewerProps,
     }));
 
     const dragProps: UploadDragEvents = {
@@ -105,6 +119,13 @@ export default defineComponent({
       onDragleave: props.onDragleave,
       onDrop: props.onDrop,
     };
+
+    const uploadClasses = computed(() => [
+      `${classPrefix.value}-upload`,
+      {
+        [`${classPrefix.value}-upload--theme-${props.theme}`]: props.theme === 'file-input',
+      },
+    ]);
 
     const getNormalFileNode = () => (
       <NormalFile
@@ -147,6 +168,11 @@ export default defineComponent({
         uploadFiles={uploadFiles}
         cancelUpload={cancelUpload}
         onPreview={props.onPreview}
+        showImageFileName={props.showImageFileName}
+        v-slots={{
+          fileListDisplay: slots.fileListDisplay,
+          'file-list-display': slots['file-list-display'],
+        }}
       />
     );
 
@@ -159,9 +185,17 @@ export default defineComponent({
         uploadFiles={uploadFiles}
         cancelUpload={cancelUpload}
         onPreview={props.onPreview}
+        showImageFileName={props.showImageFileName}
+        showThumbnail={props.showThumbnail}
+        uploadButton={props.uploadButton}
+        cancelUploadButton={props.cancelUploadButton}
         v-slots={{
           fileListDisplay: slots.fileListDisplay,
           'file-list-display': slots['file-list-display'],
+          uploadButton: slots.uploadButton,
+          'upload-button': slots['upload-button'],
+          cancelUploadButton: slots.cancelUploadButton,
+          'cancel-upload-button': slots['cancel-upload-button'],
         }}
       >
         <div class={`${classPrefix.value}-upload__trigger`} onClick={triggerUpload}>
@@ -190,7 +224,7 @@ export default defineComponent({
     );
 
     return () => (
-      <div class={`${classPrefix.value}-upload`} onPaste={props.uploadPastedFiles && onPasteFileChange}>
+      <div class={uploadClasses.value} onPaste={props.uploadPastedFiles ? onPasteFileChange : undefined}>
         <input
           ref={inputRef}
           type="file"
@@ -212,6 +246,7 @@ export default defineComponent({
             {renderTNodeJSX('tips')}
           </small>
         )}
+        {sizeOverLimitMessage.value && <small class={errorClasses}>{sizeOverLimitMessage.value}</small>}
       </div>
     );
   },

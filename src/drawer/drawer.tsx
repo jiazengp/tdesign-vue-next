@@ -100,7 +100,7 @@ export default defineComponent({
     });
 
     const handleEscKeydown = (e: KeyboardEvent) => {
-      if (props.closeOnEscKeydown ?? (globalConfig.value.closeOnEscKeydown && e.key === 'Escape')) {
+      if ((props.closeOnEscKeydown ?? globalConfig.value.closeOnEscKeydown) && e.key === 'Escape' && isVisible.value) {
         props.onEscKeydown?.({ e });
         closeDrawer({ trigger: 'esc', e });
       }
@@ -178,6 +178,9 @@ export default defineComponent({
           clearStyleFunc();
         }
 
+        // 打开前动画或关闭前动画
+        value ? props.onBeforeOpen?.() : props.onBeforeClose?.();
+
         // 处理显示逻辑
         if (props.destroyOnClose) {
           if (value) {
@@ -212,13 +215,7 @@ export default defineComponent({
         closeDrawer({ trigger: 'overlay', e });
       }
     };
-    const onKeyDown = (e: KeyboardEvent) => {
-      // 根据closeOnEscKeydown判断按下ESC时是否触发close事件
-      if ((props.closeOnEscKeydown ?? globalConfig.value.closeOnEscKeydown) && e.key === 'Escape') {
-        props.onEscKeydown?.({ e });
-        closeDrawer({ trigger: 'esc', e });
-      }
-    };
+
     const closeDrawer = (params: DrawerCloseContext) => {
       props.onClose?.(params);
       context.emit('update:visible', false);
@@ -229,7 +226,7 @@ export default defineComponent({
     });
 
     onMounted(() => {
-      const hasScrollBar = document.documentElement.scrollHeight > document.documentElement.clientHeight;
+      const hasScrollBar = window.innerWidth > document.documentElement.clientWidth;
       const scrollWidth = hasScrollBar ? getScrollbarWidth() : 0;
 
       styleEl.value = document.createElement('style');
@@ -265,7 +262,7 @@ export default defineComponent({
             ref={drawerEle}
             class={drawerClasses.value}
             style={{ zIndex: props.zIndex }}
-            onKeydown={onKeyDown}
+            onKeydown={handleEscKeydown}
             tabindex={0}
             {...context.attrs}
           >

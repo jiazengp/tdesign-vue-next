@@ -5,7 +5,8 @@ import {
   CloseCircleFilledIcon as TdCloseCircleFilledIcon,
 } from 'tdesign-icons-vue-next';
 import props from './props';
-import { useFormDisabled } from '../form/hooks';
+import { useDisabled } from '../hooks/useDisabled';
+import { useReadonly } from '../hooks/useReadonly';
 import { useConfig, usePrefixClass, useCommonClassName } from '../hooks/useConfig';
 import { useGlobalIcon } from '../hooks/useGlobalIcon';
 import { useTNodeJSX } from '../hooks/tnode';
@@ -13,9 +14,10 @@ import useInput from './useInput';
 import useInputEventHandler from './useInputEventHandler';
 import useInputWidth from './useInputWidth';
 import isUndefined from 'lodash/isUndefined';
+import { PlainObject } from '../common';
 
-function getValidAttrs(obj: Record<string, unknown>): Record<string, unknown> {
-  const newObj = {};
+function getValidAttrs(obj: PlainObject): PlainObject {
+  const newObj: PlainObject = {};
   Object.keys(obj).forEach((key) => {
     if (!isUndefined(obj[key])) {
       newObj[key] = obj[key];
@@ -28,19 +30,19 @@ export default defineComponent({
   name: 'TInput',
   props: {
     ...props,
+    /**
+     * 非公开 API，随时可能变动，请勿使用。控制透传readonly同时是否展示input 默认保留 因为正常Input需要撑开宽度
+     */
     showInput: {
-      // 没有这个 API，请勿使用，即将删除。控制透传readonly同时是否展示input 默认保留 因为正常Input需要撑开宽度
       type: Boolean,
       default: true,
     },
+    /**
+     * 非公开 API，随时可能变动，请勿使用。控制透传autoWidth之后是否容器宽度也自适应 多选等组件需要用到自适应但也需要保留宽度
+     */
     keepWrapperWidth: {
-      // 没有这个 API，请勿使用，即将删除。控制透传autoWidth之后是否容器宽度也自适应 多选等组件需要用到自适应但也需要保留宽度
       type: Boolean,
       default: false,
-    },
-    allowTriggerBlur: {
-      type: Boolean,
-      default: true,
     },
   },
 
@@ -51,7 +53,9 @@ export default defineComponent({
       BrowseOffIcon: TdBrowseOffIcon,
       CloseCircleFilledIcon: TdCloseCircleFilledIcon,
     });
-    const disabled = useFormDisabled();
+    const readonly = useReadonly();
+    const disabled = useDisabled();
+
     const COMPONENT_NAME = usePrefixClass('input');
     const INPUT_WRAP_CLASS = usePrefixClass('input__wrap');
     const INPUT_TIPS_CLASS = usePrefixClass('input__tips');
@@ -82,13 +86,16 @@ export default defineComponent({
       getValidAttrs({
         autofocus: props.autofocus,
         disabled: disabled.value,
-        readonly: props.readonly,
+        readonly: readonly.value,
         placeholder: tPlaceholder.value,
-        maxlength: (!props.allowInputOverMax && props.maxlength) || undefined,
         name: props.name || undefined,
         type: renderType.value,
         autocomplete: props.autocomplete ?? (globalConfig.value.autocomplete || undefined),
-        unselectable: props.readonly ? 'on' : undefined,
+        unselectable: readonly.value ? 'on' : undefined,
+        spellcheck: props.spellCheck,
+        // 不要传给 input 原生元素 maxlength，浏览器默认行为会按照 unicode 进行限制，与 maxLength API 违背
+        // https://github.com/Tencent/tdesign-vue-next/issues/4413
+        // 参见： https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/maxlength，提到了字符串长度的计算方法，就是 str.length
       }),
     );
 
@@ -100,7 +107,7 @@ export default defineComponent({
     ]);
 
     const inputEvents = getValidAttrs({
-      onFocus: (e: FocusEvent) => inputHandle.emitFocus(e),
+      onFocus: inputHandle.emitFocus,
       onBlur: inputHandle.formatAndEmitBlur,
       onKeydown: inputEventHandler.handleKeydown,
       onKeyup: inputEventHandler.handleKeyUp,
@@ -118,7 +125,16 @@ export default defineComponent({
       const suffix = renderTNodeJSX('suffix');
       const limitNode =
         limitNumber.value && props.showLimitNumber ? (
-          <div class={`${classPrefix.value}-input__limit-number`}>{limitNumber.value}</div>
+          <div
+            class={[
+              `${classPrefix.value}-input__limit-number`,
+              {
+                [`${classPrefix.value}-is-disabled`]: disabled.value,
+              },
+            ]}
+          >
+            {limitNumber.value}
+          </div>
         ) : null;
 
       const labelContent = label ? <div class={`${COMPONENT_NAME.value}__prefix`}>{label}</div> : null;
@@ -131,14 +147,11 @@ export default defineComponent({
         ) : null;
 
       if (props.type === 'password') {
+        const passwordClass = [{ [`${COMPONENT_NAME.value}__suffix-clear`]: !disabled.value }];
         if (renderType.value === 'password') {
-          suffixIcon = (
-            <BrowseOffIcon class={`${COMPONENT_NAME.value}__suffix-clear`} onClick={inputHandle.emitPassword} />
-          );
+          suffixIcon = <BrowseOffIcon class={passwordClass} onClick={inputHandle.emitPassword} />;
         } else if (renderType.value === 'text') {
-          suffixIcon = (
-            <BrowseIcon class={`${COMPONENT_NAME.value}__suffix-clear`} onClick={inputHandle.emitPassword} />
-          );
+          suffixIcon = <BrowseIcon class={passwordClass} onClick={inputHandle.emitPassword} />;
         }
       }
 
@@ -171,17 +184,24 @@ export default defineComponent({
         {
           [SIZE.value[props.size]]: props.size !== 'medium',
           [STATUS.value.disabled]: disabled.value,
-          [STATUS.value.focused]: focused.value,
+          [STATUS.value.focused]: disabled.value ? false : focused.value,
           [`${classPrefix.value}-is-${tStatus.value}`]: tStatus.value && tStatus.value !== 'default',
           [`${classPrefix.value}-align-${props.align}`]: props.align !== 'left',
-          [`${classPrefix.value}-is-readonly`]: props.readonly,
+          [`${classPrefix.value}-is-readonly`]: readonly.value,
           [`${COMPONENT_NAME.value}--prefix`]: prefixIcon || labelContent,
           [`${COMPONENT_NAME.value}--suffix`]: suffixIcon || suffixContent,
+          [`${COMPONENT_NAME.value}--borderless`]: props.borderless,
           [`${COMPONENT_NAME.value}--focused`]: focused.value,
         },
       ];
 
       const tips = renderTNodeJSX('tips');
+
+      const tipsClasses = [
+        INPUT_TIPS_CLASS.value,
+        `${classPrefix.value}-tips`,
+        `${classPrefix.value}-is-${tStatus.value || 'default'}`,
+      ];
 
       return (
         <div class={wrapClasses.value} v-show={props.type !== 'hidden'}>
@@ -198,19 +218,18 @@ export default defineComponent({
               </span>
             ) : null}
             {labelContent}
-            {props.showInput && (
-              <input
-                class={`${COMPONENT_NAME.value}__inner`}
-                {...inputAttrs.value}
-                {...inputEvents}
-                ref={inputRef}
-                value={isComposition.value ? compositionValue.value ?? '' : inputValue.value ?? ''}
-                onInput={(e: Event) => inputHandle.handleInput(e as InputEvent)}
-              />
-            )}
+            {/* input element must exist, or other select components can not focus by keyboard operation */}
+            <input
+              class={[`${COMPONENT_NAME.value}__inner`, { [`${COMPONENT_NAME.value}--soft-hidden`]: !props.showInput }]}
+              {...inputAttrs.value}
+              {...inputEvents}
+              ref={inputRef}
+              value={isComposition.value ? compositionValue.value ?? '' : inputValue.value ?? ''}
+              onInput={(e: Event) => inputHandle.handleInput(e as InputEvent)}
+            />
             {props.autoWidth && (
               <span ref={inputPreRef} class={`${classPrefix.value}-input__input-pre`}>
-                {innerValue.value || tPlaceholder.value}
+                {isComposition.value ? compositionValue.value ?? '' : innerValue.value || tPlaceholder.value}
               </span>
             )}
             {suffixContent}
@@ -237,11 +256,7 @@ export default defineComponent({
               </span>
             ) : null}
           </div>
-          {tips && (
-            <div class={`${INPUT_TIPS_CLASS.value} ${classPrefix.value}-input__tips--${tStatus.value || 'default'}`}>
-              {tips}
-            </div>
-          )}
+          {tips && <div class={tipsClasses}>{tips}</div>}
         </div>
       );
     };

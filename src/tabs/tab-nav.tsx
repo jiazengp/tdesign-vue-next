@@ -1,4 +1,4 @@
-import { h, defineComponent, Transition, ref, computed, watch, onMounted } from 'vue';
+import { h, defineComponent, Transition, ref, computed, watch, onMounted, nextTick } from 'vue';
 import debounce from 'lodash/debounce';
 import {
   ChevronLeftIcon as TdChevronLeftIcon,
@@ -7,7 +7,7 @@ import {
 } from 'tdesign-icons-vue-next';
 import { TdTabsProps } from './type';
 import tabProps from './props';
-import tabBase from '../_common/js/tabs/base';
+import { calcMaxOffset, calcValidOffset, calculateOffset, calcPrevOrNextOffset } from '../_common/js/tabs/base';
 
 // 子组件
 import TTabPanel from './tab-panel';
@@ -21,9 +21,6 @@ import { useGlobalIcon } from '../hooks/useGlobalIcon';
 import useDragSort from '../hooks/useDragSort';
 import isFunction from 'lodash/isFunction';
 
-const { calculateCanToLeft, calculateCanToRight, calcScrollLeft, scrollToLeft, scrollToRight, moveActiveTabIntoView } =
-  tabBase;
-
 export default defineComponent({
   name: 'TTabNav',
   ...{ resizeObserver: null },
@@ -33,8 +30,10 @@ export default defineComponent({
       type: Array as { new (): Array<InstanceType<typeof TTabPanel>> },
       default: (): Array<InstanceType<typeof TTabPanel>> => [] as Array<InstanceType<typeof TTabPanel>>,
     },
+    action: Array,
     value: tabProps.value,
     placement: tabProps.placement,
+    scrollPosition: tabProps.scrollPosition,
     size: tabProps.size,
     disabled: tabProps.disabled,
     addable: tabProps.addable,
@@ -45,40 +44,46 @@ export default defineComponent({
     onDragSort: tabProps.onDragSort,
   },
   setup(props) {
-    const COMPONENT_NAME = usePrefixClass('tabs');
+    const componentName = usePrefixClass('tabs');
     const { ChevronLeftIcon, ChevronRightIcon, AddIcon } = useGlobalIcon({
       ChevronLeftIcon: TdChevronLeftIcon,
       ChevronRightIcon: TdChevronRightIcon,
       AddIcon: TdAddIcon,
     });
     const classPrefix = usePrefixClass();
+
     const { SIZE } = useCommonClassName();
 
     const scrollLeft = ref(0);
-    const canToLeft = ref(false);
-    const canToRight = ref(false);
 
     // refs
-    // const panels = ref(props.panels);
     const navsContainerRef = ref();
     const navsWrapRef = ref();
     const leftOperationsRef = ref();
-    const toLeftBtnRef = ref();
     const rightOperationsRef = ref();
     const toRightBtnRef = ref();
     const activeTabRef = ref();
+    const maxScrollLeft = ref(0);
+
     const getRefs = () => ({
       navsContainer: navsContainerRef.value,
       navsWrap: navsWrapRef.value,
       leftOperations: leftOperationsRef.value,
-      toLeftBtn: toLeftBtnRef.value,
       rightOperations: rightOperationsRef.value,
       toRightBtn: toRightBtnRef.value,
+      activeTab: activeTabRef.value,
     });
+
+    // left right位置 选项卡的位置是在左右侧垂直方向铺开的
+    const isVerticalPlacement = computed(() => ['left', 'right'].includes(props.placement.toLowerCase()));
+
+    // 展示操作按钮
+    const canToLeft = computed(() => scrollLeft.value > 1);
+    const canToRight = computed(() => scrollLeft.value < maxScrollLeft.value - 1);
 
     // style
     const wrapTransformStyle = computed(() => {
-      if (['left', 'right'].includes(props.placement.toLowerCase())) return {};
+      if (isVerticalPlacement.value) return {};
       return {
         transform: `translate3d(${-scrollLeft.value}px, 0, 0)`,
       };
@@ -90,81 +95,96 @@ export default defineComponent({
     // class
     const iconBaseClass = computed(() => {
       return {
-        [`${COMPONENT_NAME.value}__btn`]: true,
+        [`${componentName.value}__btn`]: true,
         [SIZE.value.medium]: props.size === 'medium',
         [SIZE.value.large]: props.size === 'large',
       };
     });
     const leftIconClass = computed(() => {
       return {
-        [`${COMPONENT_NAME.value}__btn--left`]: true,
+        [`${componentName.value}__btn--left`]: true,
         ...iconBaseClass.value,
       };
     });
     const rightIconClass = computed(() => {
       return {
-        [`${COMPONENT_NAME.value}__btn--right`]: true,
+        [`${componentName.value}__btn--right`]: true,
         ...iconBaseClass.value,
       };
     });
     const addIconClass = computed(() => {
       return {
-        [`${COMPONENT_NAME.value}__add-btn`]: true,
+        [`${componentName.value}__add-btn`]: true,
         ...iconBaseClass.value,
       };
     });
     const navContainerClass = computed(() => {
       return {
-        [`${COMPONENT_NAME.value}__nav-container`]: true,
-        [`${COMPONENT_NAME.value}__nav--card`]: props.theme === 'card',
+        [`${componentName.value}__nav-container`]: true,
+        [`${componentName.value}__nav--card`]: props.theme === 'card',
         [`${classPrefix.value}-is-${props.placement}`]: true,
         [`${classPrefix.value}-is-addable`]: props.addable,
       };
     });
     const navScrollContainerClass = computed(() => {
       return {
-        [`${COMPONENT_NAME.value}__nav-scroll`]: true,
+        [`${componentName.value}__nav-scroll`]: true,
         [`${classPrefix.value}-is-scrollable`]: canToLeft.value || canToRight.value,
       };
     });
 
     const navsWrapClass = computed(() => {
       return [
-        `${COMPONENT_NAME.value}__nav-wrap`,
+        `${componentName.value}__nav-wrap`,
         `${classPrefix.value}-is-smooth`,
-        { [`${classPrefix.value}-is-vertical`]: props.placement === 'left' || props.placement === 'right' },
+        { [`${classPrefix.value}-is-vertical`]: isVerticalPlacement.value },
       ];
     });
 
-    const totalAdjust = () => {
-      adjustArrowDisplay();
-      adjustScrollLeft();
+    const setOffset = (offset: number) => {
+      scrollLeft.value = calcValidOffset(offset, maxScrollLeft.value);
     };
-    // watch
-    watch([scrollLeft, () => props.placement, () => props.panels], totalAdjust);
 
-    // life times
-    useResize(debounce(totalAdjust), navsContainerRef.value);
-    onMounted(totalAdjust);
+    const handleScroll = (action: 'prev' | 'next') => {
+      setOffset(calcPrevOrNextOffset(getRefs(), scrollLeft.value, action));
+    };
 
-    // methods
-    const adjustScrollLeft = () => {
-      scrollLeft.value = calcScrollLeft(getRefs(), scrollLeft.value);
-    };
-    const adjustArrowDisplay = () => {
-      canToLeft.value = calculateCanToLeft(getRefs(), scrollLeft.value, props.placement);
-      canToRight.value = calculateCanToRight(getRefs(), scrollLeft.value, props.placement);
-    };
-    const handleScroll = (direction: 'left' | 'right') => {
-      if (direction === 'left') {
-        scrollLeft.value = scrollToLeft(getRefs(), scrollLeft.value);
+    const handleWheel = (event: WheelEvent) => {
+      if (!canToLeft.value && !canToRight.value) return;
+
+      event.preventDefault();
+      const { deltaX, deltaY } = event;
+
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        setOffset(scrollLeft.value + deltaX);
       } else {
-        scrollLeft.value = scrollToRight(getRefs(), scrollLeft.value);
+        setOffset(scrollLeft.value + deltaY);
       }
     };
+
+    const handleActiveTabScroll = () => {
+      setTimeout(() => {
+        setOffset(calculateOffset(getRefs(), scrollLeft.value, props.scrollPosition));
+      }, 0);
+    };
+
+    const getMaxScrollLeft = () => {
+      nextTick(() => {
+        maxScrollLeft.value = calcMaxOffset(getRefs());
+      });
+    };
+
+    // watch
+    watch([() => props.placement, () => props.panels], getMaxScrollLeft);
+    watch([() => props.scrollPosition], handleActiveTabScroll);
+
+    // life times
+    useResize(debounce(getMaxScrollLeft), navsContainerRef.value);
+
     const handleAddTab = (e: MouseEvent) => {
       props.onAdd?.({ e });
     };
+
     const tabClick = (event: MouseEvent, nav: Partial<InstanceType<typeof TTabPanel>>) => {
       const { value, disabled } = nav;
       if (disabled || props.value === value) {
@@ -176,24 +196,22 @@ export default defineComponent({
       props.onRemove({ e, value, index });
     };
     const setActiveTab = (ref: any) => {
+      if (!ref?.$el) return;
       if (ref?.value === props.value && activeTabRef.value !== ref.$el) {
         activeTabRef.value = ref.$el;
-        scrollLeft.value = moveActiveTabIntoView(
-          {
-            activeTab: activeTabRef.value,
-            ...getRefs(),
-          },
-          scrollLeft.value,
-        );
+        handleActiveTabScroll();
       }
     };
 
     const { setNavsWrap } = useDragSort(props);
+
     onMounted(() => {
       setNavsWrap(navsWrapRef.value);
+      getMaxScrollLeft();
+      handleActiveTabScroll();
     });
     // renders
-    const navs = computed(() => {
+    const renderNavsContent = () => {
       return props.panels.map((panel, index) => {
         let label;
         if (panel?.children?.label) {
@@ -226,16 +244,16 @@ export default defineComponent({
           />
         );
       });
-    });
+    };
     const renderArrows = () => {
       return [
         <div
           ref={leftOperationsRef}
-          class={[`${COMPONENT_NAME.value}__operations`, `${COMPONENT_NAME.value}__operations--left`]}
+          class={[`${componentName.value}__operations`, `${componentName.value}__operations--left`]}
         >
           <Transition name="fade" mode="out-in" appear>
             {canToLeft.value ? (
-              <div ref={toLeftBtnRef} class={leftIconClass.value} onClick={() => handleScroll('left')}>
+              <div class={leftIconClass.value} onClick={() => handleScroll('prev')}>
                 <ChevronLeftIcon />
               </div>
             ) : null}
@@ -243,11 +261,11 @@ export default defineComponent({
         </div>,
         <div
           ref={rightOperationsRef}
-          class={[`${COMPONENT_NAME.value}__operations`, `${COMPONENT_NAME.value}__operations--right`]}
+          class={[`${componentName.value}__operations`, `${componentName.value}__operations--right`]}
         >
           <Transition name="fade" mode="out-in" appear>
             {canToRight.value ? (
-              <div ref={toRightBtnRef} class={rightIconClass.value} onClick={() => handleScroll('right')}>
+              <div ref={toRightBtnRef} class={rightIconClass.value} onClick={() => handleScroll('next')}>
                 <ChevronRightIcon></ChevronRightIcon>
               </div>
             ) : null}
@@ -257,18 +275,20 @@ export default defineComponent({
               <AddIcon></AddIcon>
             </div>
           ) : null}
+          {props.action}
         </div>,
       ];
     };
     const renderNavs = () => {
+      const navContent = renderNavsContent();
       return (
         <div class={navContainerClass.value}>
-          <div class={navScrollContainerClass.value}>
+          <div class={navScrollContainerClass.value} onWheel={handleWheel}>
             <div ref={navsWrapRef} class={navsWrapClass.value} style={wrapTransformStyle.value}>
               {props.theme !== 'card' && (
-                <TTabNavBar placement={props.placement} value={props.value} navs={navs.value} />
+                <TTabNavBar placement={props.placement} value={props.value} navs={navContent} />
               )}
-              {navs.value}
+              {navContent}
             </div>
           </div>
         </div>
@@ -277,7 +297,7 @@ export default defineComponent({
 
     return () => {
       return (
-        <div ref={navsContainerRef} class={[`${COMPONENT_NAME.value}__nav`]} style={navsContainerStyle.value}>
+        <div ref={navsContainerRef} class={[`${componentName.value}__nav`]} style={navsContainerStyle.value}>
           {renderArrows()}
           {renderNavs()}
         </div>

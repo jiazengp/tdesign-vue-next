@@ -12,9 +12,10 @@ import useCommonClassName from '../../hooks/useCommonClassName';
 import TLoading from '../../loading';
 import useDrag, { UploadDragEvents } from '../hooks/useDrag';
 import useGlobalIcon from '../../hooks/useGlobalIcon';
-import ImageViewer from '../../image-viewer';
+import ImageViewer, { ImageViewerProps } from '../../image-viewer';
 import { useTNodeJSX } from '../../hooks';
 import { UploadConfig } from '../../config-provider';
+import Image from '../../image';
 
 export interface DraggerProps extends CommonDisplayFileProps {
   trigger?: TdUploadProps['trigger'];
@@ -37,7 +38,7 @@ export default defineComponent({
   },
 
   setup(props, { slots }) {
-    const { displayFiles, disabled } = toRefs(props);
+    const { displayFiles, disabled, accept } = toRefs(props);
     const locale = computed(() => props.locale as UploadConfig);
 
     const renderTNodeJSX = useTNodeJSX();
@@ -45,7 +46,7 @@ export default defineComponent({
     const { sizeClassNames } = useCommonClassName();
     const uploadPrefix = `${props.classPrefix}-upload`;
 
-    const drag = useDrag(props.dragEvents);
+    const drag = useDrag(props.dragEvents, accept);
     const { dragActive } = drag;
 
     const draggerFileRef = ref();
@@ -68,9 +69,11 @@ export default defineComponent({
       const url = file?.url || file?.response?.url;
       return (
         <div class={`${uploadPrefix}__dragger-img-wrap`}>
-          {url && (
-            <ImageViewer images={[url]} trigger={(h, { open }: any) => <img src={url} onClick={open} />}></ImageViewer>
-          )}
+          <ImageViewer
+            images={[url]}
+            trigger={(h, { open }: any) => <Image src={url || file.raw} onClick={open} error="" loading="" />}
+            {...(props.imageViewerProps as ImageViewerProps)}
+          ></ImageViewer>
         </div>
       );
     };
@@ -83,7 +86,7 @@ export default defineComponent({
         return (
           <div class={`${uploadPrefix}__single-progress`}>
             <TLoading />
-            <span class={`${uploadPrefix}__single-percent`}>{file.percent}%</span>
+            {props.showUploadProgress && <span class={`${uploadPrefix}__single-percent`}>{file.percent}%</span>}
           </div>
         );
       }

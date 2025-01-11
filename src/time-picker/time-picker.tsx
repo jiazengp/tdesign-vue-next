@@ -4,18 +4,20 @@ import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { TimeIcon as TdTimeIcon } from 'tdesign-icons-vue-next';
 
 import TimePickerPanel from './panel/time-picker-panel';
-import TSelectInput, { TdSelectInputProps } from '../select-input';
+import TSelectInput, { SelectInputBlurContext } from '../select-input';
 import { formatInputValue, validateInputValue } from '../_common/js/time-picker/utils';
-
+import { useTNodeJSX } from '../hooks/tnode';
 import type { InputProps } from '../input';
 
 import props from './props';
 
 // hooks
 import useVModel from '../hooks/useVModel';
-import { useFormDisabled } from '../form/hooks';
-import { useConfig, usePrefixClass } from '../hooks/useConfig';
+import { useDisabled } from '../hooks/useDisabled';
+import { useCommonClassName, useConfig, usePrefixClass } from '../hooks/useConfig';
 import { useGlobalIcon } from '../hooks/useGlobalIcon';
+import { TdTimePickerProps } from './type';
+import { useReadonly } from '../hooks/useReadonly';
 
 dayjs.extend(customParseFormat);
 
@@ -25,23 +27,26 @@ export default defineComponent({
   props: { ...props },
 
   setup(props) {
+    const renderTNodeJSX = useTNodeJSX();
+    const { globalConfig } = useConfig('timePicker');
+    const COMPONENT_NAME = usePrefixClass('time-picker');
+    const { STATUS } = useCommonClassName();
+    const { TimeIcon } = useGlobalIcon({ TimeIcon: TdTimeIcon });
+
     const currentValue = ref('');
     const isShowPanel = ref(false);
-    const { globalConfig } = useConfig('timePicker');
-    const { TimeIcon } = useGlobalIcon({ TimeIcon: TdTimeIcon });
+    const isReadonly = useReadonly();
+
     const { value, modelValue } = toRefs(props);
     const [innerValue, setInnerValue] = useVModel(value, modelValue, props.defaultValue, props.onChange);
 
-    const disabled = useFormDisabled();
+    const disabled = useDisabled();
     const { allowInput, format } = toRefs(props);
-    const { classPrefix } = useConfig('classPrefix');
-
-    const componentName = usePrefixClass('time-picker');
 
     const inputClasses = computed(() => [
-      `${componentName.value}__group`,
+      `${COMPONENT_NAME.value}__group`,
       {
-        [`${classPrefix.value}-is-focused`]: isShowPanel.value,
+        [STATUS.value.focused]: isShowPanel.value,
       },
     ]);
 
@@ -61,14 +66,14 @@ export default defineComponent({
       currentValue.value = value;
     };
 
-    const handleInputBlur: TdSelectInputProps['onBlur'] = (value, { e }) => {
+    const handleInputBlur = (value: string, context: SelectInputBlurContext) => {
       if (allowInput.value) {
         const isValidTime = validateInputValue(currentValue.value, format.value);
         if (isValidTime) {
           setInnerValue(formatInputValue(currentValue.value, format.value));
         }
       }
-      props.onBlur?.({ value: String(value), e: e as FocusEvent });
+      props.onBlur?.({ value, inputValue: context.inputValue, e: context.e });
     };
 
     const handleClickConfirm = () => {
@@ -82,6 +87,12 @@ export default defineComponent({
       props.onPick?.(v, { e });
     };
 
+    const valueDisplayParams = computed(() => {
+      return {
+        value: isShowPanel.value ? currentValue.value : innerValue.value ?? undefined,
+      };
+    });
+
     watch(
       () => isShowPanel.value,
       () => {
@@ -90,16 +101,18 @@ export default defineComponent({
     );
 
     return () => (
-      <div class={componentName.value}>
+      <div class={COMPONENT_NAME.value}>
         <TSelectInput
           onFocus={props.onFocus}
           onClear={handleClear}
+          borderless={props.borderless}
           disabled={disabled.value}
           clearable={props.clearable}
           allowInput={allowInput.value}
-          className={inputClasses.value}
+          class={inputClasses.value}
+          label={props.label}
           suffixIcon={() => <TimeIcon />}
-          popupVisible={isShowPanel.value}
+          popupVisible={!isReadonly.value && isShowPanel.value}
           onInputChange={handleInputChange}
           onBlur={handleInputBlur}
           onPopupVisibleChange={handleShowPopup}
@@ -110,6 +123,8 @@ export default defineComponent({
           popupProps={{ overlayInnerStyle: { width: 'auto', padding: 0 }, ...(props.popupProps as object) }}
           status={props.status}
           tips={props.tips}
+          valueDisplay={() => renderTNodeJSX('valueDisplay', { params: valueDisplayParams.value })}
+          {...(props.selectInputProps as TdTimePickerProps['selectInputProps'])}
           panel={() => (
             <TimePickerPanel
               steps={props.steps}
@@ -121,6 +136,7 @@ export default defineComponent({
               onChange={handlePanelChange}
               hideDisabledTime={props.hideDisabledTime}
               handleConfirmClick={handleClickConfirm}
+              presets={props.presets}
             />
           )}
         />

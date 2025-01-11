@@ -5,16 +5,18 @@
  * */
 
 import { InputProps } from '../input';
-import { InputValue } from '../input';
 import { PopupProps } from '../popup';
 import { SelectInputProps } from '../select-input';
 import { TagProps } from '../tag';
 import { TreeProps, TreeNodeModel } from '../tree';
 import { SelectInputValueChangeContext } from '../select-input';
 import { PopupVisibleChangeContext } from '../popup';
-import { TNode, TreeOptionData } from '../common';
+import { TNode, TreeOptionData, TreeKeysType } from '../common';
 
-export interface TdTreeSelectProps<DataOption extends TreeOptionData = TreeOptionData> {
+export interface TdTreeSelectProps<
+  DataOption extends TreeOptionData = TreeOptionData,
+  TreeValueType extends TreeSelectValue = TreeSelectValue,
+> {
   /**
    * 宽度随内容自适应
    * @default false
@@ -33,7 +35,12 @@ export interface TdTreeSelectProps<DataOption extends TreeOptionData = TreeOptio
   /**
    * 多选情况下，用于设置折叠项内容，默认为 `+N`。如果需要悬浮就显示其他内容，可以使用 collapsedItems 自定义
    */
-  collapsedItems?: TNode<{ value: DataOption[]; collapsedSelectedItems: DataOption[]; count: number }>;
+  collapsedItems?: TNode<{
+    value: DataOption[];
+    collapsedSelectedItems: DataOption[];
+    count: number;
+    onClose: (context: { index: number; e?: MouseEvent }) => void;
+  }>;
   /**
    * 数据
    * @default []
@@ -41,7 +48,6 @@ export interface TdTreeSelectProps<DataOption extends TreeOptionData = TreeOptio
   data?: Array<DataOption>;
   /**
    * 是否禁用组件
-   * @default false
    */
   disabled?: boolean;
   /**
@@ -65,11 +71,15 @@ export interface TdTreeSelectProps<DataOption extends TreeOptionData = TreeOptio
   /**
    * 输入框的值
    */
-  inputValue?: InputValue;
+  inputValue?: string;
   /**
    * 输入框的值，非受控属性
    */
-  defaultInputValue?: InputValue;
+  defaultInputValue?: string;
+  /**
+   * 用来定义 `value / label / children / disabled` 在 `data` 数据中对应的字段别名，示例：`{ value: 'key', label 'name', children: 'list' }`
+   */
+  keys?: TreeKeysType;
   /**
    * 是否正在加载数据
    * @default false
@@ -113,7 +123,6 @@ export interface TdTreeSelectProps<DataOption extends TreeOptionData = TreeOptio
   prefixIcon?: TNode;
   /**
    * 只读状态，值为真会隐藏输入框，且无法打开下拉框
-   * @default false
    */
   readonly?: boolean;
   /**
@@ -125,6 +134,14 @@ export interface TdTreeSelectProps<DataOption extends TreeOptionData = TreeOptio
    * @default medium
    */
   size?: 'small' | 'medium' | 'large';
+  /**
+   * 后置图标前的后置内容
+   */
+  suffix?: string | TNode;
+  /**
+   * 组件后置图标
+   */
+  suffixIcon?: TNode;
   /**
    * 【开发中】透传 Tag 标签组件全部属性
    */
@@ -176,7 +193,7 @@ export interface TdTreeSelectProps<DataOption extends TreeOptionData = TreeOptio
   /**
    * 输入框值发生变化时触发，`context.trigger` 表示触发输入框值变化的来源：文本输入触发、清除按钮触发、失去焦点等
    */
-  onInputChange?: (value: InputValue, context?: SelectInputValueChangeContext) => void;
+  onInputChange?: (value: string, context?: SelectInputValueChangeContext) => void;
   /**
    * 下拉框显示或隐藏时触发
    */

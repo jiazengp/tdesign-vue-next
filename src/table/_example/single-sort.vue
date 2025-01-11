@@ -24,6 +24,7 @@
       :hide-sort-tips="hideSortTips"
       :show-sort-column-bg-color="true"
       bordered
+      lazy-load
       @sort-change="sortChange"
       @change="onChange"
     >
@@ -110,7 +111,7 @@ const sortChange = (val) => {
   request(val);
 };
 
-// 排序、分页、过滤等发生变化时会出发 change 事件
+// 排序、分页、过滤等发生变化时会触发 change 事件
 const onChange = (info, context) => {
   console.log('change', info, context);
 };

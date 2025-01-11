@@ -1,21 +1,21 @@
 import {
-  PropType,
-  defineComponent,
   ComponentPublicInstance,
-  ref,
+  PropType,
   computed,
-  reactive,
-  nextTick,
-  watchEffect,
+  defineComponent,
   inject,
+  nextTick,
+  reactive,
+  ref,
+  watchEffect,
 } from 'vue';
 import TTooltip from '../tooltip/index';
 import { TdSliderProps } from './type';
 
+import isFunction from 'lodash/isFunction';
 import { usePrefixClass } from '../hooks/useConfig';
 import { useSliderTooltip } from './hooks/useSliderTooltip';
 import { sliderPropsInjectKey } from './util/constants';
-import isFunction from 'lodash/isFunction';
 
 export default defineComponent({
   name: 'TSliderButton',
@@ -34,16 +34,23 @@ export default defineComponent({
     },
     label: {
       type: [String, Boolean, Function] as PropType<TdSliderProps['label']>,
+    },
+    range: {
+      type: Boolean,
       default: false,
     },
+    position: {
+      type: String,
+    },
   },
-  emits: ['input'],
+  emits: ['input', 'mouseup'],
   setup(props, ctx) {
     const COMPONENT_NAME = usePrefixClass('slider__button');
     const tooltipConfig = computed(() => props);
     const { tooltipRef, tooltipProps, toggleTooltip, showTooltip } = useSliderTooltip(tooltipConfig);
     const parentProps = inject(sliderPropsInjectKey);
     const buttonRef = ref();
+    const dragged = ref(false);
 
     /** --------------------- slide button 相关状态start ------------------- */
     const slideButtonProps = reactive({
@@ -133,16 +140,23 @@ export default defineComponent({
       if (!slideButtonProps.dragging) {
         return;
       }
+      dragged.value = true;
       slideButtonProps.isClick = false;
       if (parentProps?.resetSize && isFunction(parentProps?.resetSize)) {
         parentProps.resetSize();
       }
       let diff = 0;
       const parentSliderSize = parentProps.sliderSize;
+      const { type } = event;
+      let { clientY, clientX } = event as MouseEvent;
+      if (type === 'touchmove') {
+        const touch = (event as TouchEvent).touches;
+        [clientY, clientX] = [touch[0].clientY, touch[0].clientX];
+      }
       if (props.vertical) {
-        diff = slideButtonProps.startY - (event as MouseEvent).clientY;
+        diff = slideButtonProps.startY - clientY;
       } else {
-        diff = (event as MouseEvent).clientX - slideButtonProps.startX;
+        diff = clientX - slideButtonProps.startX;
       }
       diff = (diff / parentSliderSize) * 100;
       slideButtonProps.newPos = slideButtonProps.startPos + diff;
@@ -157,6 +171,8 @@ export default defineComponent({
           if (!slideButtonProps.isClick) {
             setPosition(slideButtonProps.newPos);
           }
+          dragged.value && ctx.emit('mouseup');
+          dragged.value = false;
         }, 0);
         window.removeEventListener('mousemove', onDragging);
         window.removeEventListener('touchmove', onDragging);
@@ -224,15 +240,10 @@ export default defineComponent({
         onblur={handleMouseLeave}
         onKeydown={onNativeKeyDown}
       >
-        {showTooltip.value ? (
-          <TTooltip ref={tooltipRef} disabled={!showTooltip.value} {...tooltipProps.value}>
-            <div class={[COMPONENT_NAME.value, { [`${COMPONENT_NAME.value}--dragging`]: slideButtonProps.dragging }]} />
-          </TTooltip>
-        ) : (
-          <div
-            class={[COMPONENT_NAME.value, { [`${COMPONENT_NAME.value}--dragging`]: slideButtonProps.dragging }]}
-          ></div>
-        )}
+        {/* hide tooltip with `hideEmptyPopup`, empty content won't show */}
+        <TTooltip ref={tooltipRef} hideEmptyPopup disabled={!showTooltip.value} {...tooltipProps.value}>
+          <div class={[COMPONENT_NAME.value, { [`${COMPONENT_NAME.value}--dragging`]: slideButtonProps.dragging }]} />
+        </TTooltip>
       </div>
     );
   },

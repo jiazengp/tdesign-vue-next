@@ -3,10 +3,20 @@ import baseTableProps from './base-table-props';
 import primaryTableProps from './primary-table-props';
 import enhancedTableProps from './enhanced-table-props';
 import PrimaryTable from './primary-table';
-import { TdEnhancedTableProps, PrimaryTableCol, TableRowData, DragSortContext, TdPrimaryTableProps } from './type';
+import {
+  TdEnhancedTableProps,
+  PrimaryTableCol,
+  TableRowData,
+  DragSortContext,
+  TdPrimaryTableProps,
+  TableRowState,
+} from './type';
 import useTreeData from './hooks/useTreeData';
 import useTreeSelect from './hooks/useTreeSelect';
-import { ScrollToElementParams } from '../hooks/useVirtualScrollNew';
+import get from 'lodash/get';
+import { ComponentScrollToElementParams } from '../common';
+import log from '../_common/js/log';
+import { usePrefixClass } from '../hooks';
 
 export default defineComponent({
   name: 'TEnhancedTable',
@@ -19,7 +29,9 @@ export default defineComponent({
 
   setup(props: TdEnhancedTableProps, context: SetupContext) {
     const primaryTableRef = ref(null);
-    const { store, dataSource, formatTreeColumn, swapData, ...treeInstanceFunctions } = useTreeData(props, context);
+    const { store, dataSource, formatTreeColumn, swapData, onExpandFoldIconClick, ...treeInstanceFunctions } =
+      useTreeData(props, context);
+    const classPrefix = usePrefixClass();
 
     const treeDataMap = ref(store.value.treeDataMap);
 
@@ -61,7 +73,7 @@ export default defineComponent({
 
     const onEnhancedTableRowClick: TdPrimaryTableProps['onRowClick'] = (p) => {
       if (props.tree?.expandTreeNodeOnClick) {
-        treeInstanceFunctions.toggleExpandData(
+        onExpandFoldIconClick(
           {
             row: p.row,
             rowIndex: p.index,
@@ -70,6 +82,30 @@ export default defineComponent({
         );
       }
       props.onRowClick?.(p);
+    };
+
+    const getScrollRowIndex = (rowStateData: TableRowState, key: string | number): number => {
+      if (!rowStateData) return -1;
+      if (rowStateData.rowIndex >= 0) return rowStateData.rowIndex;
+      if (rowStateData.rowIndex < 0) {
+        return getScrollRowIndex(rowStateData.parent, key);
+      }
+    };
+
+    const scrollToElement = (params: ComponentScrollToElementParams) => {
+      let { index } = params;
+      if (!index && index !== 0) {
+        if (!params.key) {
+          log.error('Table', 'scrollToElement: one of `index` or `key` must exist.');
+          return;
+        }
+        const rowStateData = treeDataMap.value.get(params.key);
+        index = getScrollRowIndex(rowStateData, params.key);
+        if (index < 0 || index === undefined) {
+          log.error('Table', `${params.key} does not exist in data, check \`rowKey\` or \`data\` please.`);
+        }
+      }
+      primaryTableRef.value.scrollToElement({ ...params, index });
     };
 
     context.expose({
@@ -89,9 +125,7 @@ export default defineComponent({
       refreshTable: () => {
         primaryTableRef.value.refreshTable();
       },
-      scrollToElement: (data: ScrollToElementParams) => {
-        primaryTableRef.value.scrollToElement(data);
-      },
+      scrollToElement,
     });
 
     return () => {
@@ -104,9 +138,15 @@ export default defineComponent({
         // 半选状态节点
         indeterminateSelectedRowKeys: tIndeterminateSelectedRowKeys.value,
         // 树形结构不允许本地数据分页
-        disableDataPage: Boolean(props.tree && Object.keys(props.tree).length),
+        disableDataPage: Boolean(props.tree && Object.keys(props.tree).length) || props.disableDataPage,
         onSelectChange: onInnerSelectChange,
         onDragSort: onDragSortChange,
+        rowClassName: ({ row }) => {
+          const rowValue = get(row, props.rowKey || 'id');
+          const rowState = treeDataMap.value.get(rowValue);
+          if (!rowState) return [props.rowClassName];
+          return [`${classPrefix.value}-table-tr--level-${rowState.level}`, props.rowClassName];
+        },
       };
       if (props.tree?.expandTreeNodeOnClick) {
         enhancedProps.onRowClick = onEnhancedTableRowClick;

@@ -49,7 +49,7 @@ const NormalFile = defineComponent({
     const renderProgress = (percent: number) => (
       <div class={`${uploadPrefix}__single-progress`}>
         <TLoading />
-        <span class={`${uploadPrefix}__single-percent`}>{percent || 0}%</span>
+        {props.showUploadProgress && <span class={`${uploadPrefix}__single-percent`}>{percent || 0}%</span>}
       </div>
     );
 
@@ -67,7 +67,14 @@ const NormalFile = defineComponent({
             key={file.name + index + file.percent + file.status}
           >
             {file.url ? (
-              <Link href={file.url} target="_blank" hover="color" size="small" class={`${uploadPrefix}__single-name`}>
+              <Link
+                href={file.url}
+                target="_blank"
+                hover="color"
+                size="small"
+                class={`${uploadPrefix}__single-name`}
+                disabled={false}
+              >
                 {fileName}
               </Link>
             ) : (
@@ -138,8 +145,21 @@ const NormalFile = defineComponent({
 
     return () => {
       const classes = [`${uploadPrefix}__single`, `${uploadPrefix}__single-${theme.value}`];
-      const fileListDisplay = renderTNodeJSX('fileListDisplay', { params: { files: props.displayFiles } });
+      let fileListDisplay = renderTNodeJSX('fileListDisplay', {
+        params: {
+          onRemove: props.onRemove,
+          toUploadFiles: props.toUploadFiles,
+          sizeOverLimitMessage: props.sizeOverLimitMessage,
+          locale: props.locale,
+          files: props.displayFiles,
+        },
+      });
+      if (props.fileListDisplay === null || fileListDisplay === null) {
+        fileListDisplay = null;
+      }
+
       const { displayFiles } = props;
+
       return (
         <div class={classes}>
           {theme.value === 'file-input' && renderFilePreviewAsInput()}
@@ -150,9 +170,7 @@ const NormalFile = defineComponent({
             <small class={[props.tipsClasses, props.placeholderClass]}>{props.placeholder}</small>
           )}
 
-          {fileListDisplay || renderFilePreviewAsText(displayFiles)}
-
-          {props.sizeOverLimitMessage && <small class={props.errorClasses}>{props.sizeOverLimitMessage}</small>}
+          {fileListDisplay === null ? null : fileListDisplay || renderFilePreviewAsText(displayFiles)}
 
           {/* 单文件上传失败要显示失败的原因 */}
           {!props.multiple && displayFiles[0]?.status === 'fail' && theme.value === 'file' ? (

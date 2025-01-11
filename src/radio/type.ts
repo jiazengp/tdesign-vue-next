@@ -6,7 +6,7 @@
 
 import { TNode, SizeEnum } from '../common';
 
-export interface TdRadioProps {
+export interface TdRadioProps<T = RadioValue> {
   /**
    * 是否允许取消选中
    * @default false
@@ -32,7 +32,7 @@ export interface TdRadioProps {
    */
   default?: string | TNode;
   /**
-   * 是否为禁用态。如果存在父组件 RadioGroup，默认值由 RadioGroup.disabled 控制。Radio.disabled 优先级高于 RadioGroup.disabled
+   * 是否为禁用态。如果存在父组件 RadioGroup，默认值由 RadioGroup.disabled 控制。优先级：Radio.disabled > RadioGroup.disabled > Form.disabled
    */
   disabled?: boolean;
   /**
@@ -45,15 +45,19 @@ export interface TdRadioProps {
    */
   name?: string;
   /**
+   * 只读状态
+   */
+  readonly?: boolean;
+  /**
    * 单选按钮的值
    */
-  value?: string | number | boolean;
+  value?: T;
   /**
    * 选中状态变化时触发
    */
   onChange?: (checked: boolean, context: { e: Event }) => void;
   /**
-   * 点击时出发，一般用于外层阻止冒泡场景
+   * 点击时触发，一般用于外层阻止冒泡场景
    */
   onClick?: (context: { e: MouseEvent }) => void;
 }
@@ -65,7 +69,7 @@ export interface TdRadioGroupProps<T = RadioValue> {
    */
   allowUncheck?: boolean;
   /**
-   * 是否禁用全部子单选框。默认为 false。RadioGroup.disabled 优先级低于 Radio.disabled
+   * 是否禁用全部子单选框。优先级：Radio.disabled > RadioGroup.disabled > Form.disabled
    */
   disabled?: boolean;
   /**
@@ -78,10 +82,19 @@ export interface TdRadioGroupProps<T = RadioValue> {
    */
   options?: Array<RadioOption>;
   /**
+   * 只读状态
+   */
+  readonly?: boolean;
+  /**
    * 组件尺寸【讨论中】
    * @default medium
    */
   size?: SizeEnum;
+  /**
+   * 组件风格
+   * @default radio
+   */
+  theme?: 'radio' | 'button';
   /**
    * 选中的值
    */
@@ -100,9 +113,9 @@ export interface TdRadioGroupProps<T = RadioValue> {
    */
   variant?: 'outline' | 'primary-filled' | 'default-filled';
   /**
-   * 选中值发生变化时触发
+   * 选中值发生变化时触发, `context.name` 指 RadioGroup 的 name 属性
    */
-  onChange?: (value: T, context: { e: Event }) => void;
+  onChange?: (value: T, context: { e: Event; name?: string }) => void;
 }
 
 export type RadioOption = string | number | RadioOptionObj;

@@ -1,21 +1,25 @@
 <template>
-  <t-tree
-    :data="items"
-    activable
-    hover
-    transition
-    expand-all
-    draggable
-    @drag-start="handleDragStart"
-    @drag-end="handleDragEnd"
-    @drag-over="handleDragOver"
-    @drag-leave="handleDragLeave"
-    @drop="handleDrop"
-  />
+  <t-space direction="vertical">
+    <t-tree
+      :data="items"
+      activable
+      hover
+      transition
+      expand-all
+      draggable
+      :allow-drop="handleAllowDrop"
+      @drag-start="handleDragStart"
+      @drag-end="handleDragEnd"
+      @drag-over="handleDragOver"
+      @drag-leave="handleDragLeave"
+      @drop="handleDrop"
+    />
+  </t-space>
 </template>
 
 <script setup>
-const items = [
+import { ref } from 'vue';
+const items = ref([
   {
     value: '1',
     label: '1',
@@ -27,7 +31,6 @@ const items = [
           {
             value: '1.1.1',
             label: '1.1.1',
-            draggable: false,
             children: [
               {
                 value: '1.1.1.1',
@@ -67,23 +70,30 @@ const items = [
       },
       {
         value: '2.2',
-        label: '2.2',
+        label: '2.2 不允许拖放为 2.2 的子节点',
       },
     ],
   },
-];
-
-const handleDragStart = ({ node, e }) => {
-  console.log('handleDragStart', node.value, e);
+]);
+const handleDragStart = (ctx) => {
+  console.log('handleDragStart', ctx);
 };
-const handleDragEnd = ({ node, e }) => {
-  console.log('handleDragEnd', node.value, e);
+const handleDragEnd = (ctx) => {
+  console.log('handleDragEnd', ctx);
 };
-const handleDragOver = () => {};
-const handleDragLeave = ({ node, e }) => {
-  console.log('handleDragLeave', node.value, e);
+const handleDragOver = (ctx) => {
+  console.log('handleDragOver', ctx);
 };
-const handleDrop = ({ node, dropPosition, e }) => {
-  console.log('handleDrop', node.value, dropPosition, e);
+const handleDragLeave = (ctx) => {
+  console.log('handleDragLeave', ctx);
+};
+const handleDrop = (ctx) => {
+  console.log('handleDrop', ctx);
+};
+const handleAllowDrop = (ctx) => {
+  const { dropNode, dropPosition } = ctx;
+  if (dropNode.value === '2.2' && dropPosition === 0) {
+    return false;
+  }
 };
 </script>

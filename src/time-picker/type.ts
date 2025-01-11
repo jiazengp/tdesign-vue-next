@@ -6,6 +6,8 @@
 
 import { InputProps } from '../input';
 import { PopupProps } from '../popup';
+import { SelectInputProps } from '../select-input';
+import { SelectInputBlurContext } from '../select-input';
 import { RangeInputProps } from '../range-input';
 import { TNode } from '../common';
 
@@ -16,21 +18,31 @@ export interface TdTimePickerProps {
    */
   allowInput?: boolean;
   /**
+   * 是否自动调换左右区间的顺序，默认为 true；若需要支持跨天的场景，可以设置为 false
+   * @default true
+   */
+  autoSwap?: boolean;
+  /**
+   * 无边框模式
+   * @default false
+   */
+  borderless?: boolean;
+  /**
    * 是否允许清除选中值
    * @default false
    */
   clearable?: boolean;
   /**
-   * 禁用时间项
+   * 禁用时间项的配置函数
    */
   disableTime?: (
     h: number,
     m: number,
     s: number,
-  ) => Partial<{ hour: Array<number>; minute: Array<number>; second: Array<number> }>;
+    ms: number,
+  ) => Partial<{ hour: Array<number>; minute: Array<number>; second: Array<number>; millisecond: Array<number> }>;
   /**
    * 是否禁用组件
-   * @default false
    */
   disabled?: boolean;
   /**
@@ -48,6 +60,10 @@ export interface TdTimePickerProps {
    */
   inputProps?: InputProps;
   /**
+   * 左侧文本
+   */
+  label?: string | TNode;
+  /**
    * 占位符
    */
   placeholder?: string;
@@ -60,12 +76,17 @@ export interface TdTimePickerProps {
    */
   presets?: PresetTime;
   /**
+   * 透传 SelectInput 筛选器输入框组件的全部属性
+   */
+  selectInputProps?: SelectInputProps;
+  /**
    * 尺寸
    * @default medium
    */
   size?: 'small' | 'medium' | 'large';
   /**
    * 输入框状态
+   * @default default
    */
   status?: 'default' | 'success' | 'warning' | 'error';
   /**
@@ -93,9 +114,13 @@ export interface TdTimePickerProps {
    */
   modelValue?: TimePickerValue;
   /**
+   * 自定义选中项呈现的内容
+   */
+  valueDisplay?: string | TNode<{ value: TimePickerValue }>;
+  /**
    * 当输入框失去焦点时触发，value 表示组件当前有效值
    */
-  onBlur?: (context: { value: TimePickerValue; e: FocusEvent }) => void;
+  onBlur?: (context: { value: TimePickerValue } & SelectInputBlurContext) => void;
   /**
    * 选中值发生变化时触发
    */
@@ -129,6 +154,11 @@ export interface TdTimeRangePickerProps {
    */
   allowInput?: boolean;
   /**
+   * 无边框模式
+   * @default false
+   */
+  borderless?: boolean;
+  /**
    * 是否允许清除选中值
    * @default false
    */
@@ -144,7 +174,6 @@ export interface TdTimeRangePickerProps {
   ) => Partial<{ hour: Array<number>; minute: Array<number>; second: Array<number> }>;
   /**
    * 是否禁用组件，值为数组表示可分别控制开始日期和结束日期是否禁用
-   * @default false
    */
   disabled?: boolean | Array<boolean>;
   /**
@@ -157,6 +186,10 @@ export interface TdTimeRangePickerProps {
    * @default true
    */
   hideDisabledTime?: boolean;
+  /**
+   * 左侧文本
+   */
+  label?: string | TNode;
   /**
    * 占位符，值为数组表示可分别为开始日期和结束日期设置占位符
    */
@@ -180,6 +213,7 @@ export interface TdTimeRangePickerProps {
   size?: 'small' | 'medium' | 'large';
   /**
    * 输入框状态
+   * @default default
    */
   status?: 'default' | 'success' | 'warning' | 'error';
   /**

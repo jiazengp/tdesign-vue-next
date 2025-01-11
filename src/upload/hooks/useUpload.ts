@@ -9,7 +9,7 @@ import {
   getDisplayFiles,
   formatToUploadFile,
 } from '../../_common/js/upload/main';
-import { getFileUrlByFileRaw } from '../../_common/js/upload/utils';
+import { getFileList } from '../../_common/js/upload/utils';
 import useVModel from '../../hooks/useVModel';
 import { InnerProgressContext, OnResponseErrorContext, SuccessContext } from '../../_common/js/upload/types';
 import { useConfig } from '../../hooks/useConfig';
@@ -58,6 +58,13 @@ export default function useUpload(props: TdUploadProps) {
       isBatchUpload: isBatchUpload.value,
     });
   });
+
+  const uploadFilePercent = (params: { file: UploadFile; percent: number }) => {
+    const { file, percent } = params;
+    const operationUploadFiles = autoUpload.value ? toUploadFiles : uploadValue;
+    const index = operationUploadFiles.value.findIndex((item) => file.raw === item.raw);
+    operationUploadFiles.value[index] = { ...operationUploadFiles.value[index], percent };
+  };
 
   const updateFilesProgress = () => {
     if (props.autoUpload) {
@@ -122,46 +129,25 @@ export default function useUpload(props: TdUploadProps) {
   const handleNotAutoUpload = (toFiles: UploadFile[]) => {
     const tmpFiles = props.multiple && !isBatchUpload.value ? uploadValue.value.concat(toFiles) : toFiles;
     if (!tmpFiles.length) return;
-
-    // 图片需要本地预览
-    if (['image', 'image-flow'].includes(props.theme)) {
-      const list = tmpFiles.map(
-        (file) =>
-          new Promise((resolve) => {
-            getFileUrlByFileRaw(file.raw).then((url) => {
-              resolve({ ...file, url: file.url || url });
-            });
-          }),
-      );
-      Promise.all(list).then((files) => {
-        setUploadValue(files, {
-          trigger: 'add',
-          index: uploadValue.value.length,
-          file: toFiles[0],
-          files: toFiles,
-        });
-      });
-    } else {
-      setUploadValue(tmpFiles, {
-        trigger: 'add',
-        index: uploadValue.value.length,
-        file: tmpFiles[0],
-      });
-    }
+    setUploadValue(tmpFiles, {
+      trigger: 'add',
+      index: uploadValue.value.length,
+      file: toFiles[0],
+      files: toFiles,
+    });
     toUploadFiles.value = [];
   };
 
-  const onFileChange = (files: FileList) => {
+  const onFileChange = (files: File[]) => {
     if (disabled.value) return;
     const params = { currentSelectedFiles: formatToUploadFile([...files], props.format) };
-    // @ts-ignore
     props.onSelectChange?.([...files], params);
     validateFile({
       uploadValue: uploadValue.value,
       // @ts-ignore
       files: [...files],
       allowUploadDuplicateFile: props.allowUploadDuplicateFile,
-      max: props.max,
+      max: props.multiple ? props.max : 0,
       sizeLimit: props.sizeLimit,
       isBatchUpload: isBatchUpload.value,
       autoUpload: autoUpload.value,
@@ -221,15 +207,16 @@ export default function useUpload(props: TdUploadProps) {
   };
 
   const onNormalFileChange = (e: InputEvent) => {
-    onFileChange?.((e.target as HTMLInputElement).files);
+    const fileList = getFileList((e.target as HTMLInputElement).files);
+    onFileChange?.(fileList);
   };
 
-  function onDragFileChange(e: DragEvent) {
-    onFileChange?.(e.dataTransfer.files);
+  function onDragFileChange(files: File[]) {
+    onFileChange?.(files);
   }
 
   function onPasteFileChange(e: ClipboardEvent) {
-    onFileChange?.([...e.clipboardData.items].map((file: DataTransferItem) => file.getAsFile()) as any);
+    onFileChange?.([...e.clipboardData.files]);
   }
 
   /**
@@ -272,12 +259,10 @@ export default function useUpload(props: TdUploadProps) {
       ({ status, data, list, failedFiles }) => {
         uploading.value = false;
         if (status === 'success') {
-          if (props.autoUpload) {
-            setUploadValue([...data.files], {
-              trigger: 'add',
-              file: data.files[0],
-            });
-          }
+          setUploadValue([...data.files], {
+            trigger: 'add',
+            file: data.files[0],
+          });
           xhrReq.value = [];
           props.onSuccess?.({
             fileList: data.files,
@@ -353,8 +338,9 @@ export default function useUpload(props: TdUploadProps) {
     });
     uploading.value = false;
 
+    // autoUpload do not need to reset to waiting state
     if (autoUpload.value) {
-      toUploadFiles.value = toUploadFiles.value.map((item) => ({ ...item, status: 'waiting' }));
+      toUploadFiles.value = [];
     } else {
       setUploadValue(
         uploadValue.value.map((item) => {
@@ -390,6 +376,7 @@ export default function useUpload(props: TdUploadProps) {
     inputRef,
     disabled,
     xhrReq,
+    uploadFilePercent,
     uploadFiles,
     onFileChange,
     onNormalFileChange,

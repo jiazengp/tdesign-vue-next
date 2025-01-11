@@ -9,6 +9,9 @@ export { emitEvent } from '../utils/event';
 
 export const TRANSFER_NAME = 'TTransfer';
 
+export const SOURCE = 'source';
+export const TARGET = 'target';
+
 interface TreeNode {
   children?: Array<TreeNode>;
 }
@@ -43,6 +46,7 @@ function getDataValues(
   {
     isTreeMode = false,
     include = true, // true=保留filterValues，false=删除filterValues中元素
+    remainValue = [] as Array<TransferValue>,
   } = {},
 ): Array<TransferValue> {
   // 用于处理 tree 组件这种数据结构是树形的
@@ -51,7 +55,7 @@ function getDataValues(
     if (data) {
       for (let i = 0; i < data.length; i++) {
         const item = data[i];
-        const isInclude = filterValues.includes(item.value);
+        const isInclude = filterValues.includes(item.value) && !item.disabled;
         if (!include && isInclude) {
           continue; // 排除模式下子元素一律排除
         }
@@ -74,7 +78,9 @@ function getDataValues(
     .filter((item) => {
       if (!item) return false;
       const isInclude = filterValues.includes(item.value);
-      return ((include && isInclude) || (!include && !isInclude)) && !item.disabled;
+      return (
+        ((include && isInclude) || (!include && !isInclude)) && (!item.disabled || remainValue.includes(item.value))
+      );
     })
     .map((item) => item.value);
 }
@@ -87,6 +93,7 @@ function getTransferData(
   const list: Array<TransferItemOption> = data.map((transferDataItem, index): TransferItemOption => {
     const labelKey = keys?.label || 'label';
     const valueKey = keys?.value || 'value';
+    const disabledKey = keys?.disabled || 'disabled';
     if (isUndefined(transferDataItem[labelKey])) {
       throw new Error(`${labelKey} is not in DataOption ${JSON.stringify(transferDataItem)}`);
     }
@@ -97,7 +104,7 @@ function getTransferData(
       label: transferDataItem[labelKey] as string,
       value: transferDataItem[valueKey],
       key: `key__value_${transferDataItem[valueKey]}_index_${index}`,
-      disabled: transferDataItem.disabled ?? false,
+      disabled: transferDataItem[disabledKey] ?? false,
       data: transferDataItem,
     };
     if (isTreeMode && transferDataItem.children) {

@@ -4,9 +4,11 @@ import HighlightOption from './highlight-option';
 import { CommonClassNameType } from '../hooks/useCommonClassName';
 import { AutoCompleteOptionObj, TdAutoCompleteProps } from './type';
 import log from '../_common/js/log';
-import { usePrefixClass } from '../hooks/useConfig';
+import { useConfig, usePrefixClass } from '../hooks/useConfig';
 import { on, off } from '../utils/dom';
 import isString from 'lodash/isString';
+import escapeRegExp from 'lodash/escapeRegExp';
+import { ARROW_UP_REG, ARROW_DOWN_REG, ENTER_REG } from '../_common/js/common';
 
 export default defineComponent({
   name: 'AutoCompleteOptionList',
@@ -27,6 +29,8 @@ export default defineComponent({
   setup(props, { emit, slots, expose }) {
     const active = ref('');
     const classPrefix = usePrefixClass();
+
+    const { globalConfig } = useConfig('autoComplete');
 
     const classes = computed(() => `${classPrefix.value}-select__list`);
     const optionClasses = computed(() => [
@@ -63,7 +67,7 @@ export default defineComponent({
         options = options.filter((option) => props.filter(props.value, option));
       } else if (props.filterable) {
         // 默认过滤规则
-        const regExp = new RegExp(props.value, 'i');
+        const regExp = new RegExp(escapeRegExp(props.value), 'i');
         options = options.filter((item) => regExp.test(item.text));
       }
       return options;
@@ -81,16 +85,18 @@ export default defineComponent({
 
     // 键盘事件，上下选择
     const onKeyInnerPress = (e: KeyboardEvent) => {
-      if (e.code === 'ArrowUp' || e.key === 'ArrowUp') {
+      if (ARROW_UP_REG.test(e.code) || ARROW_UP_REG.test(e.key)) {
         const index = tOptions.value.findIndex((item) => item.text === active.value);
         const newIndex = index - 1 < 0 ? tOptions.value.length - 1 : index - 1;
         active.value = tOptions.value[newIndex]?.text;
-      } else if (e.code === 'ArrowDown' || e.key === 'ArrowDown') {
+      } else if (ARROW_DOWN_REG.test(e.code) || ARROW_DOWN_REG.test(e.key)) {
         const index = tOptions.value.findIndex((item) => item.text === active.value);
         const newIndex = index + 1 >= tOptions.value.length ? 0 : index + 1;
         active.value = tOptions.value[newIndex]?.text;
-      } else if (e.code === 'Enter' || e.key === 'Enter') {
-        emit('select', active.value, { e });
+      } else if (ENTER_REG.test(e.code) || ENTER_REG.test(e.key)) {
+        if (active.value) {
+          emit('select', active.value, { e });
+        }
       }
     };
 
@@ -134,7 +140,8 @@ export default defineComponent({
     });
 
     return () => {
-      if (!tOptions.value.length) return null;
+      if (!tOptions.value.length)
+        return <div className={`${classPrefix.value}-auto-complete__panel--empty`}>{globalConfig.value.empty}</div>;
       return (
         <ul class={classes.value}>
           {tOptions.value.map((item) => {

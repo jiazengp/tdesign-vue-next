@@ -9,18 +9,15 @@ import { TNode, Styles, AttachNode } from '../common';
 
 export interface TdDialogProps {
   /**
-   * 对话框挂载的节点，默认挂在组件本身的位置。数据类型为 String 时，会被当作选择器处理，进行节点查询。示例：'body' 或 () => document.body
-   * @default ''
+   * 对话框挂载的节点。数据类型为 String 时，会被当作选择器处理，进行节点查询。示例：'body' 或 () => document.body
    */
   attach?: AttachNode;
   /**
    * 对话框内容
-   * @default ''
    */
   body?: string | TNode;
   /**
    * 取消按钮，可自定义。值为 null 则不显示取消按钮。值类型为字符串，则表示自定义按钮文本，值类型为 Object 则表示透传 Button 组件属性。使用 TNode 自定义按钮时，需自行控制取消事件
-   * @default ''
    */
   cancelBtn?: string | ButtonProps | TNode | null;
   /**
@@ -34,13 +31,17 @@ export interface TdDialogProps {
   closeOnEscKeydown?: boolean;
   /**
    * 点击蒙层时是否触发关闭事件
+   * @default false
    */
   closeOnOverlayClick?: boolean;
   /**
    * 确认按钮。值为 null 则不显示确认按钮。值类型为字符串，则表示自定义按钮文本，值类型为 Object 则表示透传 Button 组件属性。使用 TNode 自定义按钮时，需自行控制确认事件
-   * @default ''
    */
   confirmBtn?: string | ButtonProps | TNode | null;
+  /**
+   * 确认按钮加载状态
+   */
+  confirmLoading?: boolean;
   /**
    * 是否在按下回车键时，触发确认事件
    */
@@ -54,6 +55,15 @@ export interface TdDialogProps {
    * @default false
    */
   destroyOnClose?: boolean;
+  /**
+   * 弹框元素类名，示例：'t-class-dialog-first t-class-dialog-second'
+   * @default ''
+   */
+  dialogClassName?: string;
+  /**
+   * 作用于对话框本身的样式
+   */
+  dialogStyle?: Styles;
   /**
    * 对话框是否可以拖拽（仅在非模态对话框时有效）
    * @default false
@@ -105,7 +115,6 @@ export interface TdDialogProps {
   top?: string | number;
   /**
    * 控制对话框是否显示
-   * @default false
    */
   visible?: boolean;
   /**
@@ -116,6 +125,14 @@ export interface TdDialogProps {
    * 对话框层级，Web 侧样式默认为 2500，移动端和小程序样式默认为 1500
    */
   zIndex?: number;
+  /**
+   * 对话框执行消失动画效果前触发
+   */
+  onBeforeClose?: () => void;
+  /**
+   * 对话框执行弹出动画效果前触发
+   */
+  onBeforeOpen?: () => void;
   /**
    * 如果“取消”按钮存在，则点击“取消”按钮时触发，同时触发关闭事件
    */
@@ -150,6 +167,21 @@ export interface TdDialogProps {
   onOverlayClick?: (context: { e: MouseEvent }) => void;
 }
 
+export interface TdDialogCardProps
+  extends Pick<
+    TdDialogProps,
+    | 'body'
+    | 'cancelBtn'
+    | 'closeBtn'
+    | 'confirmBtn'
+    | 'footer'
+    | 'header'
+    | 'theme'
+    | 'onCancel'
+    | 'onCloseBtnClick'
+    | 'onConfirm'
+  > {}
+
 export interface DialogOptions extends Omit<TdDialogProps, 'attach'> {
   /**
    * 对话框挂载的节点。数据类型为 String 时，会被当作选择器处理，进行节点查询。示例：'body' 或 () => document.body
@@ -176,6 +208,10 @@ export interface DialogInstance {
    * 隐藏弹框
    */
   hide: () => void;
+  /**
+   * 设置确认按钮加载状态
+   */
+  setConfirmLoading: (loading: boolean) => void;
   /**
    * 显示弹框
    */
