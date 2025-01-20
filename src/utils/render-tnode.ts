@@ -1,14 +1,16 @@
-import { h, ComponentPublicInstance, VNode, isVNode } from 'vue';
+import { h, ComponentPublicInstance, VNode, isVNode, Fragment } from 'vue';
 import isEmpty from 'lodash/isEmpty';
 import isString from 'lodash/isString';
 import isFunction from 'lodash/isFunction';
 import isObject from 'lodash/isObject';
 import camelCase from 'lodash/camelCase';
 import kebabCase from 'lodash/kebabCase';
+import isArray from 'lodash/isArray';
 
 export interface JSXRenderContext {
   defaultNode?: VNode | string;
   params?: Record<string, any>;
+  slotFirst?: boolean;
   // 是否不打印 LOG
   silent?: boolean;
 }
@@ -26,8 +28,30 @@ export function getDefaultNode(options?: OptionsType) {
   return defaultNode;
 }
 
+export function getChildren(content: VNode[]) {
+  const childList: VNode[] = [];
+  const innerGetChildren = (content: VNode[]) => {
+    if (!isArray(content)) return;
+    content.forEach((item: VNode) => {
+      if (item.children && isArray(item.children)) {
+        if (item.type !== Fragment) return;
+        innerGetChildren(item.children as VNode[]);
+      } else {
+        childList.push(item);
+      }
+    });
+    return childList;
+  };
+
+  return innerGetChildren(content);
+}
+
 export function getParams(options?: OptionsType) {
   return isObject(options) && 'params' in options ? options.params : {};
+}
+
+export function getSlotFirst(options?: OptionsType) {
+  return isObject(options) && 'slotFirst' in options ? options.slotFirst : {};
 }
 
 // 同时支持驼峰命名和中划线命名的插槽，示例：value-display 和 valueDisplay
@@ -69,7 +93,7 @@ export const renderTNodeJSX = (instance: ComponentPublicInstance, name: string, 
   // }
 
   // propsNode 为 false 不渲染
-  if (propsNode === false) return;
+  if (propsNode === false || propsNode === null) return;
   if (propsNode === true && defaultNode) {
     return handleSlots(instance, params, name) || defaultNode;
   }

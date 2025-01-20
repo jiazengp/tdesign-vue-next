@@ -4,7 +4,7 @@ import isFunction from 'lodash/isFunction';
 import isString from 'lodash/isString';
 
 import TreeStore from '../_common/js/tree/tree-store';
-import { useFormDisabled } from '../form/hooks';
+import { useDisabled } from '../hooks/useDisabled';
 import useVModel from '../hooks/useVModel';
 import useDefaultValue from '../hooks/useDefaultValue';
 import { getTreeValue, getCascaderValue, isEmptyValues, isValueInvalid } from './core/helper';
@@ -17,6 +17,7 @@ import {
   TreeNodeModel,
   CascaderChangeSource,
   CascaderValue,
+  TreeOptionData,
 } from './interface';
 
 // 全局状态
@@ -50,6 +51,7 @@ export const useContext = (
         showAllLevels,
         minCollapsedNum,
         valueType,
+        modelValue,
       } = props;
       return {
         value: statusContext.scopeVal,
@@ -71,7 +73,7 @@ export const useContext = (
           statusContext.treeNodes = nodes;
         },
         setValue: (val: CascaderValue, source: CascaderChangeSource, node?: TreeNodeModel) => {
-          if (isEqual(val, statusContext.scopeVal)) return;
+          if (isEqual(val, modelValue)) return;
           setInnerValue(val, { source, node });
         },
         setVisible: setPopupVisible,
@@ -88,7 +90,7 @@ export const useContext = (
 
 // 内聚组件核心的副作用与状态处理
 export const useCascaderContext = (props: TdCascaderProps) => {
-  const disabled = useFormDisabled();
+  const disabled = useDisabled();
   const { value, modelValue, popupVisible } = toRefs(props);
   const [innerValue, setInnerValue] = useVModel(value, modelValue, props.defaultValue, props.onChange);
   const [innerPopupVisible, setPopupVisible] = useDefaultValue(
@@ -224,8 +226,19 @@ export const useCascaderContext = (props: TdCascaderProps) => {
     },
   );
 
+  const getCascaderItems = (arrValue: CascaderValue[]) => {
+    const options: TreeOptionData[] = [];
+    arrValue.forEach((value) => {
+      const nodes = statusContext.treeStore?.getNodes(value);
+      nodes && nodes[0] && options.push(nodes[0].data);
+    });
+    return options;
+  };
+
   return {
     cascaderContext,
     isFilterable,
+    innerValue,
+    getCascaderItems,
   };
 };

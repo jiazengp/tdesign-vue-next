@@ -70,12 +70,18 @@ export default defineComponent({
       return labelText;
     }
 
+    const renderTitle = (node: TreeNode) => {
+      if (typeof node.label === 'string') return node.label;
+
+      return null;
+    };
+
     function RenderLabelContent(node: TreeNode, cascaderContext: CascaderContextType) {
       const label = RenderLabelInner(node, cascaderContext);
 
       const labelCont = (
         <span
-          title={cascaderContext.inputVal ? getFullPathLabel(node) : node.label}
+          title={cascaderContext.inputVal ? getFullPathLabel(node) : renderTitle(node)}
           class={[`${COMPONENT_NAME.value}-label`, `${COMPONENT_NAME.value}-label--ellipsis`]}
           role="label"
         >
@@ -97,7 +103,7 @@ export default defineComponent({
           // node.value maybe string or number
           name={String(node.value)}
           stopLabelTrigger={!!node.children}
-          title={inputVal ? getFullPathLabel(node) : node.label}
+          title={inputVal ? getFullPathLabel(node) : renderTitle(node)}
           onChange={() => {
             props.onChange();
           }}
@@ -110,18 +116,13 @@ export default defineComponent({
 
     return () => {
       const { cascaderContext, node, optionChild } = props;
+      const isOptionChildAndMultiple = optionChild && cascaderContext.multiple;
       return (
         <li
           ref={liRef}
           class={itemClass.value}
-          onClick={(e: Event) => {
-            e.stopPropagation();
-            props.onClick();
-          }}
-          onMouseenter={(e: Event) => {
-            e.stopPropagation();
-            props.onMouseenter();
-          }}
+          onClick={() => (isOptionChildAndMultiple ? props.onChange() : props.onClick())}
+          onMouseenter={props.onMouseenter}
         >
           {optionChild ||
             (cascaderContext.multiple

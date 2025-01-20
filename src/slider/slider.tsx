@@ -10,20 +10,20 @@ import {
   watch,
   toRefs,
 } from 'vue';
+import isNumber from 'lodash/isNumber';
+import isArray from 'lodash/isArray';
 import props from './props';
 import TSliderButton from './slider-button';
 import { SliderValue } from './type';
-// hooks
-import { useFormDisabled } from '../form/hooks';
-import isArray from 'lodash/isArray';
 
+// hooks
 import { usePrefixClass, useCommonClassName } from '../hooks/useConfig';
 import { useSliderMark } from './hooks/useSliderMark';
 import { useSliderInput } from './hooks/useSliderInput';
 import { formatSliderValue, getStopStyle } from './util/common';
 import { sliderPropsInjectKey } from './util/constants';
 import useVModel from '../hooks/useVModel';
-import isNumber from 'lodash/isNumber';
+import { useDisabled } from '../hooks/useDisabled';
 
 interface SliderButtonType {
   setPosition: (param: number) => {};
@@ -37,7 +37,7 @@ export default defineComponent({
   props: { ...props },
 
   setup(props) {
-    const disabled = useFormDisabled();
+    const disabled = useDisabled();
     const COMPONENT_NAME = usePrefixClass('slider');
     const { STATUS } = useCommonClassName();
     const { value, modelValue } = toRefs(props) as any;
@@ -157,7 +157,7 @@ export default defineComponent({
         [firstValue.value, secondValue.value] = [maxLimit, minLimit];
         return [maxLimit, minLimit];
       }
-      let preValue = value;
+      let preValue = value as number;
       if (preValue < min) {
         preValue = min;
       }
@@ -236,6 +236,11 @@ export default defineComponent({
       }
     };
 
+    const getFixValue = () => {
+      const changeValue = props.range ? [firstValue.value, secondValue.value] : firstValue.value;
+      return setValues(changeValue);
+    };
+
     // 全局点击
     const onSliderClick = (event: MouseEvent): void => {
       if (disabled.value || dragging.value) {
@@ -253,6 +258,8 @@ export default defineComponent({
         value = ((event.clientX - sliderOffsetLeft) / sliderSize.value) * 100;
         setPosition(value);
       }
+      const fixValue = getFixValue();
+      props.onChangeEnd?.(fixValue);
     };
 
     // mark 点击触发修改事件
@@ -264,6 +271,8 @@ export default defineComponent({
       const value = Number((point / rangeDiff.value) * 100);
       setPosition(value);
       emitChange(point);
+      const fixValue = getFixValue();
+      props.onChangeEnd?.(fixValue);
     };
 
     /** 副作用监听 */
@@ -328,13 +337,13 @@ export default defineComponent({
     const renderInputNumber = useSliderInput(inputConfig);
 
     const renderInputButton = (): VNode => {
-      const firstInputVal = firstValue.value;
+      const firstInputVal = setValues(firstValue.value) as number;
       const firstInputOnChange = (v: number) => {
-        firstValue.value = v;
+        firstValue.value = setValues(v) as number;
       };
-      const secondInputVal = secondValue.value;
+      const secondInputVal = setValues(secondValue.value) as number;
       const secondInputOnChange = (v: number) => {
-        secondValue.value = v;
+        secondValue.value = setValues(v) as number;
       };
       return (
         <div
@@ -392,10 +401,16 @@ export default defineComponent({
               value={firstValue.value}
               ref={firstButtonRef}
               disabled={disabled.value}
+              range={props.range}
+              position="start"
               tooltip-props={props.tooltipProps}
               label={props.label}
               onInput={(v: number) => {
                 firstValue.value = v;
+              }}
+              onMouseup={() => {
+                const fixValue = getFixValue();
+                props.onChangeEnd?.(fixValue);
               }}
             />
             {props.range && (
@@ -405,9 +420,15 @@ export default defineComponent({
                 ref={secondButtonRef}
                 disabled={disabled.value}
                 label={props.label}
+                range={props.range}
+                position="end"
                 tooltip-props={props.tooltipProps}
                 onInput={(v: number) => {
                   secondValue.value = v;
+                }}
+                onMouseup={() => {
+                  const fixValue = getFixValue();
+                  props.onChangeEnd?.(fixValue);
                 }}
               />
             )}

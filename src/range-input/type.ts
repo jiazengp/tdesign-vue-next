@@ -16,6 +16,11 @@ export interface TdRangeInputProps {
    */
   activeIndex?: number;
   /**
+   * 无边框模式
+   * @default false
+   */
+  borderless?: boolean;
+  /**
    * 是否可清空
    * @default false
    */
@@ -46,7 +51,6 @@ export interface TdRangeInputProps {
   prefixIcon?: TNode;
   /**
    * 只读状态
-   * @default false
    */
   readonly?: boolean;
   /**
@@ -172,6 +176,10 @@ export interface TdRangeInputPopupProps {
    */
   defaultInputValue?: RangeInputValue;
   /**
+   * 左侧文本
+   */
+  label?: string | TNode;
+  /**
    * 下拉框内容，可完全自定义
    */
   panel?: string | TNode;
@@ -189,7 +197,6 @@ export interface TdRangeInputPopupProps {
   rangeInputProps?: RangeInputProps;
   /**
    * 只读状态，值为真会隐藏输入框，且无法打开下拉框
-   * @default false
    */
   readonly?: boolean;
   /**

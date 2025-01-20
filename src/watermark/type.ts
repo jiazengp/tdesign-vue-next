@@ -49,7 +49,7 @@ export interface TdWatermarkProps {
    */
   offset?: Array<number>;
   /**
-   * 水印是否可被删除，默认会开启水印节点防删
+   * 水印是否可被删除
    * @default true
    */
   removable?: boolean;
@@ -86,6 +86,11 @@ export interface WatermarkText {
    * @default rgba(0,0,0,0.1)
    */
   fontColor?: string;
+  /**
+   * 水印文本文字字体
+   * @default ''
+   */
+  fontFamily?: string;
   /**
    * 水印文本文字大小
    * @default 16

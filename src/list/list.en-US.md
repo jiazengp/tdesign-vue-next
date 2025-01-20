@@ -1,7 +1,6 @@
 :: BASE_DOC ::
 
 ## API
-
 ### List Props
 
 name | type | default | description | required
@@ -9,8 +8,9 @@ name | type | default | description | required
 asyncLoading | String / Slot / Function | - | Typescript：`string \| TNode`。[see more ts definition](https://github.com/Tencent/tdesign-vue-next/blob/develop/src/common.ts) | N
 footer | String / Slot / Function | - | Typescript：`string \| TNode`。[see more ts definition](https://github.com/Tencent/tdesign-vue-next/blob/develop/src/common.ts) | N
 header | String / Slot / Function | - | Typescript：`string \| TNode`。[see more ts definition](https://github.com/Tencent/tdesign-vue-next/blob/develop/src/common.ts) | N
-layout | String | horizontal | options：horizontal/vertical | N
-size | String | medium | options：small/medium/large | N
+layout | String | horizontal | options: horizontal/vertical | N
+scroll | Object | - | lazy load and virtual scroll。Typescript：`TScroll`。[see more ts definition](https://github.com/Tencent/tdesign-vue-next/blob/develop/src/common.ts) | N
+size | String | medium | options: small/medium/large | N
 split | Boolean | false | \- | N
 stripe | Boolean | false | \- | N
 onLoadMore | Function |  | Typescript：`(options: { e: MouseEvent }) => void`<br/> | N
@@ -22,6 +22,13 @@ name | params | description
 -- | -- | --
 load-more | `(options: { e: MouseEvent })` | \-
 scroll | `(options: { e: Event \| WheelEvent; scrollTop: number; scrollBottom: number })` | \-
+
+### ListInstanceFunctions
+
+name | params | return | description
+-- | -- | -- | --
+scrollTo | `(scrollToParams: ScrollToElementParams)` | \- | support scrolling to a specific node when virtual scrolling 
+
 
 ### ListItem Props
 

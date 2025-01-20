@@ -5,14 +5,13 @@
  * */
 
 import { InputProps } from '../input';
-import { InputValue } from '../input';
 import { PopupProps } from '../popup';
 import { SelectInputProps } from '../select-input';
 import { TagInputProps } from '../tag-input';
 import { TagProps } from '../tag';
 import { SelectInputValueChangeContext } from '../select-input';
 import { PopupVisibleChangeContext } from '../popup';
-import { PlainObject, TNode, SizeEnum, InfinityScroll } from '../common';
+import { PlainObject, TNode, SizeEnum, KeysType, InfinityScroll } from '../common';
 
 export interface TdSelectProps<T extends SelectOption = SelectOption> {
   /**
@@ -36,9 +35,14 @@ export interface TdSelectProps<T extends SelectOption = SelectOption> {
    */
   clearable?: boolean;
   /**
-   * 多选情况下，用于设置折叠项内容，默认为 `+N`。如果需要悬浮就显示其他内容，可以使用 collapsedItems 自定义。`value` 表示当前存在的所有标签，`collapsedTags` 表示折叠的标签，泛型 `T` 继承 `SelectOption`，表示选项数据；`count` 表示折叠的数量
+   * 多选情况下，用于设置折叠项内容，默认为 `+N`。如果需要悬浮就显示其他内容，可以使用 collapsedItems 自定义。`value` 表示当前存在的所有标签，`collapsedSelectedItems` 表示折叠的标签，泛型 `T` 继承 `SelectOption`，表示选项数据；`count` 表示折叠的数量, `onClose` 表示移除标签
    */
-  collapsedItems?: TNode<{ value: T[]; collapsedSelectedItems: T[]; count: number }>;
+  collapsedItems?: TNode<{
+    value: T[];
+    collapsedSelectedItems: T[];
+    count: number;
+    onClose: (context: { index: number; e?: MouseEvent }) => void;
+  }>;
   /**
    * 是否允许用户创建新条目，需配合 filterable 使用
    * @default false
@@ -67,15 +71,15 @@ export interface TdSelectProps<T extends SelectOption = SelectOption> {
   /**
    * 输入框的值
    */
-  inputValue?: InputValue;
+  inputValue?: string;
   /**
    * 输入框的值，非受控属性
    */
-  defaultInputValue?: InputValue;
+  defaultInputValue?: string;
   /**
-   * 用来定义 value / label 在 `options` 中对应的字段别名
+   * 用来定义 value / label / disabled 在 `options` 中对应的字段别名
    */
-  keys?: SelectKeysType;
+  keys?: KeysType;
   /**
    * 左侧文本
    */
@@ -138,7 +142,6 @@ export interface TdSelectProps<T extends SelectOption = SelectOption> {
   prefixIcon?: TNode;
   /**
    * 只读状态，值为真会隐藏输入框，且无法打开下拉框
-   * @default false
    */
   readonly?: boolean;
   /**
@@ -204,7 +207,9 @@ export interface TdSelectProps<T extends SelectOption = SelectOption> {
   /**
    * 自定义选中项呈现的内容
    */
-  valueDisplay?: string | TNode<{ value: SelectValue; onClose: (index: number) => void; displayValue?: SelectValue }>;
+  valueDisplay?:
+    | string
+    | TNode<{ value: SelectValue; onClose: (index: number) => void; displayValue?: SelectValue; label?: string }>;
   /**
    * 用于控制选中值的类型。假设数据选项为：`[{ label: '姓名', value: 'name' }]`，value 表示值仅返回数据选项中的 value， object 表示值返回全部数据。
    * @default value
@@ -228,7 +233,7 @@ export interface TdSelectProps<T extends SelectOption = SelectOption> {
   /**
    * 当选择新创建的条目时触发
    */
-  onCreate?: (value: string | number) => void;
+  onCreate?: (value: string | number | boolean) => void;
   /**
    * 回车键按下时触发。`inputValue` 表示输入框的值，`value` 表示选中值
    */
@@ -240,7 +245,7 @@ export interface TdSelectProps<T extends SelectOption = SelectOption> {
   /**
    * 输入框值发生变化时触发，`context.trigger` 表示触发输入框值变化的来源：文本输入触发、清除按钮触发、失去焦点等
    */
-  onInputChange?: (value: InputValue, context?: SelectInputValueChangeContext) => void;
+  onInputChange?: (value: string, context?: SelectInputValueChangeContext) => void;
   /**
    * 下拉框显示或隐藏时触发
    */
@@ -287,7 +292,7 @@ export interface TdOptionProps {
   /**
    * 选项值
    */
-  value?: string | number;
+  value?: string | number | boolean;
 }
 
 export interface TdOptionGroupProps {
@@ -304,8 +309,9 @@ export interface TdOptionGroupProps {
 }
 
 export interface SelectKeysType {
-  value?: string;
-  label?: string;
+  value?: string | ((option: SelectOption) => string);
+  label?: string | ((option: SelectOption) => string);
+  disabled?: string;
 }
 
 export type SelectValue<T extends SelectOption = SelectOption> = string | number | boolean | T | Array<SelectValue<T>>;

@@ -28,8 +28,9 @@ zIndex | Number | - | \- | N
 name | type | default | description | required
 -- | -- | -- | -- | --
 fontColor | String | rgba(0,0,0,0.1) | \- | N
+fontFamily | String | - | font-family configuration for watermark text. | N
 fontSize | Number | 16 | \- | N
-fontWeight | String | normal | options：normal/lighter/bold/bolder | N
+fontWeight | String | normal | options: normal/lighter/bold/bolder | N
 text | String | - | \- | N
 
 ### WatermarkImage

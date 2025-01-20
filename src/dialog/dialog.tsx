@@ -1,15 +1,4 @@
-import {
-  computed,
-  defineComponent,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  Transition,
-  watch,
-  getCurrentInstance,
-  Teleport,
-} from 'vue';
+import { computed, defineComponent, nextTick, onBeforeUnmount, onMounted, ref, Transition, watch, Teleport } from 'vue';
 import {
   CloseIcon as TdCloseIcon,
   InfoCircleFilledIcon as TdInfoCircleFilledIcon,
@@ -24,11 +13,11 @@ import { useConfig, usePrefixClass } from '../hooks/useConfig';
 import { useAction, useSameTarget } from './hooks';
 import { useTNodeJSX, useContent } from '../hooks/tnode';
 import useDestroyOnClose from '../hooks/useDestroyOnClose';
-import { stack } from './stack';
 import { getScrollbarWidth } from '../_common/js/utils/getScrollbarWidth';
 
 import type { TdDialogProps } from './type';
 import useTeleport from '../hooks/useTeleport';
+import usePopupManager from '../hooks/usePopupManager';
 
 function GetCSSValue(v: string | number) {
   return Number.isNaN(Number(v)) ? v : `${Number(v)}px`;
@@ -140,6 +129,7 @@ export default defineComponent({
     const isNormal = computed(() => props.mode === 'normal');
     // 是否全屏对话框
     const isFullScreen = computed(() => props.mode === 'full-screen');
+    const computedVisible = computed(() => props.visible);
     const maskClass = computed(() => [
       `${COMPONENT_NAME.value}__mask`,
       !props.showOverlay && `${classPrefix.value}-is-hidden`,
@@ -172,6 +162,7 @@ export default defineComponent({
         `${COMPONENT_NAME.value}`,
         `${COMPONENT_NAME.value}__modal-${props.theme}`,
         isModeLess.value && props.draggable && `${COMPONENT_NAME.value}--draggable`,
+        props.dialogClassName,
       ];
 
       if (isFullScreen.value) {
@@ -182,7 +173,10 @@ export default defineComponent({
       return dialogClass;
     });
     const dialogStyle = computed(() => {
-      return !isFullScreen.value ? { width: GetCSSValue(props.width) } : {}; // width全屏模式不生效
+      return !isFullScreen.value ? { width: GetCSSValue(props.width), ...props.dialogStyle } : { ...props.dialogStyle }; // width全屏模式不生效
+    });
+    const { isLastDialog } = usePopupManager('dialog', {
+      visible: computedVisible,
     });
 
     watch(
@@ -191,7 +185,7 @@ export default defineComponent({
         if (value) {
           if ((isModal.value && !props.showInAttachedElement) || isFullScreen.value) {
             if (props.preventScrollThrough) {
-              document.head.appendChild(styleEl.value);
+              document.body.appendChild(styleEl.value);
             }
 
             nextTick(() => {
@@ -207,7 +201,6 @@ export default defineComponent({
         } else {
           clearStyleFunc();
         }
-        storeUid(value);
         addKeyboardEvent(value);
       },
     );
@@ -223,15 +216,6 @@ export default defineComponent({
       }, 150);
     }
 
-    const instance = getCurrentInstance();
-    const storeUid = (flag: boolean) => {
-      if (flag) {
-        stack.push(instance.uid);
-      } else {
-        stack.pop();
-      }
-    };
-
     const addKeyboardEvent = (status: boolean) => {
       if (status) {
         document.addEventListener('keydown', keyboardEvent);
@@ -241,17 +225,17 @@ export default defineComponent({
         props.confirmOnEnter && document.removeEventListener('keydown', keyboardEnterEvent);
       }
     };
-    // 回车出发确认事件
+    // 回车触发确认事件
     const keyboardEnterEvent = (e: KeyboardEvent) => {
       const eventSrc = e.target as HTMLElement;
       if (eventSrc.tagName.toLowerCase() === 'input') return; // 若是input触发 则不执行
       const { code } = e;
-      if ((code === 'Enter' || code === 'NumpadEnter') && stack.top === instance.uid) {
+      if ((code === 'Enter' || code === 'NumpadEnter') && isLastDialog()) {
         props.onConfirm?.({ e });
       }
     };
     const keyboardEvent = (e: KeyboardEvent) => {
-      if (e.code === 'Escape' && stack.top === instance.uid) {
+      if (e.code === 'Escape' && isLastDialog()) {
         props.onEscKeydown?.({ e });
         // 根据closeOnEscKeydown判断按下ESC时是否触发close事件
         if (props.closeOnEscKeydown ?? globalConfig.value.closeOnEscKeydown) {
@@ -274,10 +258,21 @@ export default defineComponent({
       });
     };
 
+    // 打开弹窗动画开始时事件
+    const beforeEnter = () => {
+      props.onBeforeOpen?.();
+    };
+
     // 打开弹窗动画结束时事件
     const afterEnter = () => {
       props.onOpened?.();
     };
+
+    // 关闭弹窗动画开始时事件
+    const beforeLeave = () => {
+      props.onBeforeClose?.();
+    };
+
     // 关闭弹窗动画结束时事件
     const afterLeave = () => {
       if (isModeLess.value && props.draggable && dialogEle.value) {
@@ -331,9 +326,15 @@ export default defineComponent({
             globalConfirm: globalConfig.value.confirm,
             globalConfirmBtnTheme: globalConfig.value.confirmBtnTheme,
             className: `${COMPONENT_NAME.value}__confirm`,
+            confirmLoading: props.confirmLoading,
           })}
         </div>
       );
+
+      const headerContent = renderTNodeJSX('header', defaultHeader);
+
+      const footerContent = renderTNodeJSX('footer', defaultFooter);
+
       const headerClassName = isFullScreen.value
         ? [`${COMPONENT_NAME.value}__header`, `${COMPONENT_NAME.value}__header--fullscreen`]
         : `${COMPONENT_NAME.value}__header`;
@@ -344,8 +345,6 @@ export default defineComponent({
 
       const bodyClassName =
         props.theme === 'default' ? [`${COMPONENT_NAME.value}__body`] : [`${COMPONENT_NAME.value}__body__icon`];
-
-      const footerContent = renderTNodeJSX('footer', defaultFooter);
 
       if (isFullScreen.value && footerContent) {
         bodyClassName.push(`${COMPONENT_NAME.value}__body--fullscreen`);
@@ -378,18 +377,20 @@ export default defineComponent({
               v-draggable={isModeLess.value && props.draggable}
               ref={dialogEle}
             >
-              <div class={headerClassName} onMousedown={onStopDown}>
-                <div class={`${COMPONENT_NAME.value}__header-content`}>
-                  {getIcon()}
-                  {renderTNodeJSX('header', defaultHeader)}
-                </div>
+              {(headerContent || headerContent === 0 || props.closeBtn) && (
+                <div class={headerClassName} onMousedown={onStopDown}>
+                  <div class={`${COMPONENT_NAME.value}__header-content`}>
+                    {getIcon()}
+                    {headerContent}
+                  </div>
 
-                {props.closeBtn ? (
-                  <span class={closeClassName} onClick={closeBtnAction}>
-                    {renderTNodeJSX('closeBtn', defaultCloseBtn)}
-                  </span>
-                ) : null}
-              </div>
+                  {props.closeBtn ? (
+                    <span class={closeClassName} onClick={closeBtnAction}>
+                      {renderTNodeJSX('closeBtn', defaultCloseBtn)}
+                    </span>
+                  ) : null}
+                </div>
+              )}
               <div class={bodyClassName} onMousedown={onStopDown}>
                 {body}
               </div>
@@ -431,7 +432,9 @@ export default defineComponent({
       dialogClass,
       dialogStyle,
       dialogEle,
+      beforeEnter,
       afterEnter,
+      beforeLeave,
       afterLeave,
       hasEventOn,
       renderDialog,
@@ -460,7 +463,9 @@ export default defineComponent({
         <Transition
           duration={300}
           name={`${COMPONENT_NAME}-zoom__vue`}
+          onBeforeEnter={this.beforeEnter}
           onAfterEnter={this.afterEnter}
+          onBeforeLeave={this.beforeLeave}
           onAfterLeave={this.afterLeave}
         >
           {(!this.destroyOnClose || this.visible) && (

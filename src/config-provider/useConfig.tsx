@@ -19,10 +19,13 @@ export * from './type';
  * @returns {t, globalConfig}
  * useConfig('pagination')
  */
-export function useConfig<T extends keyof GlobalConfigProvider>(componentName?: T) {
+export function useConfig<T extends keyof GlobalConfigProvider>(
+  componentName: T = undefined,
+  componentLocale?: GlobalConfigProvider[T],
+) {
   const injectGlobalConfig = getCurrentInstance() ? inject(configProviderInjectKey, null) : globalConfigCopy;
-  const mergedGlobalConfig = computed(() => injectGlobalConfig?.value || (defaultGlobalConfig as GlobalConfigProvider));
-  const globalConfig = computed(() => mergedGlobalConfig.value[componentName]);
+  const mergedGlobalConfig = computed(() => injectGlobalConfig?.value || defaultGlobalConfig);
+  const globalConfig = computed(() => Object.assign({}, mergedGlobalConfig.value[componentName], componentLocale));
 
   const classPrefix = computed(() => {
     return mergedGlobalConfig.value.classPrefix;
@@ -65,7 +68,9 @@ export function useConfig<T extends keyof GlobalConfigProvider>(componentName?: 
  */
 export const provideConfig = (props: ConfigProviderProps) => {
   const defaultData = cloneDeep(defaultGlobalConfig);
-  const mergedGlobalConfig = computed(() => mergeWith(defaultData, props.globalConfig));
+  const mergedGlobalConfig = computed(() =>
+    Object.assign({}, mergeWith(defaultData as unknown as GlobalConfigProvider, props.globalConfig)),
+  );
 
   provide(configProviderInjectKey, mergedGlobalConfig);
 

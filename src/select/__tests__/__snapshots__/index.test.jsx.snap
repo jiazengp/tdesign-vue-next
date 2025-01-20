@@ -1,4 +1,4 @@
-// Vitest Snapshot v1
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`Select > :props > :borderless 1`] = `
 <div
@@ -12,21 +12,15 @@ exports[`Select > :props > :borderless 1`] = `
       class="t-input__wrap"
     >
       <div
-        class="t-input t-is-readonly t-input--prefix t-input--suffix"
+        class="t-input t-is-readonly t-input--suffix"
       >
         <!---->
-        <div
-          class="t-input__prefix"
-        >
-          
-          <!---->
-          <!---->
-          
-        </div>
+        <!---->
         <input
           class="t-input__inner"
           placeholder="请选择"
           readonly=""
+          spellcheck="false"
           type="text"
           unselectable="on"
         />
@@ -74,21 +68,15 @@ exports[`Select > :props > :clearable 1`] = `
       class="t-input__wrap"
     >
       <div
-        class="t-input t-is-readonly t-input--prefix t-input--suffix"
+        class="t-input t-is-readonly t-input--suffix"
       >
         <!---->
-        <div
-          class="t-input__prefix"
-        >
-          
-          <!---->
-          <!---->
-          
-        </div>
+        <!---->
         <input
           class="t-input__inner"
           placeholder="请选择"
           readonly=""
+          spellcheck="false"
           type="text"
           unselectable="on"
         />
@@ -136,21 +124,15 @@ exports[`Select > :props > :creatable 1`] = `
       class="t-input__wrap"
     >
       <div
-        class="t-input t-is-readonly t-input--prefix t-input--suffix"
+        class="t-input t-is-readonly t-input--suffix"
       >
         <!---->
-        <div
-          class="t-input__prefix"
-        >
-          
-          <!---->
-          <!---->
-          
-        </div>
+        <!---->
         <input
           class="t-input__inner"
           placeholder="请选择"
           readonly=""
+          spellcheck="false"
           type="text"
           unselectable="on"
         />
@@ -198,22 +180,16 @@ exports[`Select > :props > :disabled 1`] = `
       class="t-input__wrap"
     >
       <div
-        class="t-input t-is-disabled t-is-readonly t-input--prefix t-input--suffix"
+        class="t-input t-is-disabled t-is-readonly t-input--suffix"
       >
         <!---->
-        <div
-          class="t-input__prefix"
-        >
-          
-          <!---->
-          <!---->
-          
-        </div>
+        <!---->
         <input
           class="t-input__inner"
           disabled=""
           placeholder="请选择"
           readonly=""
+          spellcheck="false"
           type="text"
           unselectable="on"
         />
@@ -262,21 +238,15 @@ exports[`Select > :props > :labelInValue 1`] = `
       class="t-input__wrap"
     >
       <div
-        class="t-input t-is-readonly t-input--prefix t-input--suffix"
+        class="t-input t-is-readonly t-input--suffix"
       >
         <!---->
-        <div
-          class="t-input__prefix"
-        >
-          
-          <!---->
-          <!---->
-          
-        </div>
+        <!---->
         <input
           class="t-input__inner"
           placeholder="请选择"
           readonly=""
+          spellcheck="false"
           type="text"
           unselectable="on"
         />
@@ -324,21 +294,15 @@ exports[`Select > :props > :loading 1`] = `
       class="t-input__wrap"
     >
       <div
-        class="t-input t-is-readonly t-input--prefix t-input--suffix"
+        class="t-input t-is-readonly t-input--suffix"
       >
         <!---->
-        <div
-          class="t-input__prefix"
-        >
-          
-          <!---->
-          <!---->
-          
-        </div>
+        <!---->
         <input
           class="t-input__inner"
           placeholder="请选择"
           readonly=""
+          spellcheck="false"
           type="text"
           unselectable="on"
         />
@@ -409,6 +373,7 @@ exports[`Select > :props > :multiple 1`] = `
           class="t-input__inner"
           placeholder="请选择"
           readonly=""
+          spellcheck="false"
           type="text"
           unselectable="on"
         />
@@ -460,21 +425,15 @@ exports[`Select > :props > :placeholder 1`] = `
       class="t-input__wrap"
     >
       <div
-        class="t-input t-is-readonly t-input--prefix t-input--suffix"
+        class="t-input t-is-readonly t-input--suffix"
       >
         <!---->
-        <div
-          class="t-input__prefix"
-        >
-          
-          <!---->
-          <!---->
-          
-        </div>
+        <!---->
         <input
           class="t-input__inner"
           placeholder="please select"
           readonly=""
+          spellcheck="false"
           type="text"
           unselectable="on"
         />
@@ -523,21 +482,15 @@ exports[`Select > :props > :remote 1`] = `
       class="t-input__wrap"
     >
       <div
-        class="t-input t-is-readonly t-input--prefix t-input--suffix"
+        class="t-input t-is-readonly t-input--suffix"
       >
         <!---->
-        <div
-          class="t-input__prefix"
-        >
-          
-          <!---->
-          <!---->
-          
-        </div>
+        <!---->
         <input
           class="t-input__inner"
           placeholder="请选择"
           readonly=""
+          spellcheck="false"
           type="text"
           unselectable="on"
         />
@@ -585,21 +538,15 @@ exports[`Select > :props > :reserveKeyword 1`] = `
       class="t-input__wrap"
     >
       <div
-        class="t-input t-is-readonly t-input--prefix t-input--suffix"
+        class="t-input t-is-readonly t-input--suffix"
       >
         <!---->
-        <div
-          class="t-input__prefix"
-        >
-          
-          <!---->
-          <!---->
-          
-        </div>
+        <!---->
         <input
           class="t-input__inner"
           placeholder="请选择"
           readonly=""
+          spellcheck="false"
           type="text"
           unselectable="on"
         />
@@ -647,21 +594,15 @@ exports[`Select > :props > :size 1`] = `
       class="t-input__wrap"
     >
       <div
-        class="t-input t-size-l t-is-readonly t-input--prefix t-input--suffix"
+        class="t-input t-size-l t-is-readonly t-input--suffix"
       >
         <!---->
-        <div
-          class="t-input__prefix"
-        >
-          
-          <!---->
-          <!---->
-          
-        </div>
+        <!---->
         <input
           class="t-input__inner"
           placeholder="请选择"
           readonly=""
+          spellcheck="false"
           type="text"
           unselectable="on"
         />
@@ -709,21 +650,15 @@ exports[`Select Option > :props > :disabled 1`] = `
       class="t-input__wrap"
     >
       <div
-        class="t-input t-is-readonly t-input--prefix t-input--suffix"
+        class="t-input t-is-readonly t-input--suffix"
       >
         <!---->
-        <div
-          class="t-input__prefix"
-        >
-          
-          <!---->
-          <!---->
-          
-        </div>
+        <!---->
         <input
           class="t-input__inner"
           placeholder="请选择"
           readonly=""
+          spellcheck="false"
           type="text"
           unselectable="on"
         />
@@ -771,21 +706,15 @@ exports[`Select Option > :props > :label 1`] = `
       class="t-input__wrap"
     >
       <div
-        class="t-input t-is-readonly t-input--prefix t-input--suffix"
+        class="t-input t-is-readonly t-input--suffix"
       >
         <!---->
-        <div
-          class="t-input__prefix"
-        >
-          
-          <!---->
-          <!---->
-          
-        </div>
+        <!---->
         <input
           class="t-input__inner"
           placeholder="请选择"
           readonly=""
+          spellcheck="false"
           type="text"
           unselectable="on"
         />
@@ -833,21 +762,15 @@ exports[`Select Option > :props > :value 1`] = `
       class="t-input__wrap"
     >
       <div
-        class="t-input t-is-readonly t-input--prefix t-input--suffix"
+        class="t-input t-is-readonly t-input--suffix"
       >
         <!---->
-        <div
-          class="t-input__prefix"
-        >
-          
-          <!---->
-          <!---->
-          
-        </div>
+        <!---->
         <input
           class="t-input__inner"
           placeholder="请选择"
           readonly=""
+          spellcheck="false"
           type="text"
           unselectable="on"
         />
@@ -895,21 +818,15 @@ exports[`Select OptionGroup > :props > :value 1`] = `
       class="t-input__wrap"
     >
       <div
-        class="t-input t-is-readonly t-input--prefix t-input--suffix"
+        class="t-input t-is-readonly t-input--suffix"
       >
         <!---->
-        <div
-          class="t-input__prefix"
-        >
-          
-          <!---->
-          <!---->
-          
-        </div>
+        <!---->
         <input
           class="t-input__inner"
           placeholder="请选择"
           readonly=""
+          spellcheck="false"
           type="text"
           unselectable="on"
         />

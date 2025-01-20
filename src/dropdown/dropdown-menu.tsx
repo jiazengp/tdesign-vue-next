@@ -1,5 +1,5 @@
 import { defineComponent, ref, onMounted, h, reactive } from 'vue';
-import { ChevronRightIcon as TdChevronRightIcon, ChevronLeftIcon as TdChevronLeftIcon } from 'tdesign-icons-vue-next';
+import { ChevronRightIcon as TdChevronRightIcon } from 'tdesign-icons-vue-next';
 import DropdownItem from './dropdown-item';
 
 import { DropdownOption } from './type';
@@ -17,11 +17,11 @@ export default defineComponent({
     const dropdownClass = usePrefixClass('dropdown');
     const dropdownMenuClass = usePrefixClass('dropdown__menu');
     const scrollTopMap = reactive({});
+    const itemHeight = ref(null);
     const menuRef = ref<HTMLElement>();
     const isOverMaxHeight = ref(false);
-    const { ChevronRightIcon, ChevronLeftIcon } = useGlobalIcon({
+    const { ChevronRightIcon } = useGlobalIcon({
       ChevronRightIcon: TdChevronRightIcon,
-      ChevronLeftIcon: TdChevronLeftIcon,
     });
 
     const handleItemClick = (options: { data: DropdownOption; context: { e: MouseEvent } }) => {
@@ -40,6 +40,7 @@ export default defineComponent({
         const menuHeight = parseInt(window?.getComputedStyle(menuRef.value).height, 10);
         if (menuHeight >= props.maxHeight) isOverMaxHeight.value = true;
       }
+      itemHeight.value = document.querySelector(`.${dropdownClass.value}__item`).scrollHeight + 2;
     });
 
     const getContent = (content: string | TNode) => {
@@ -55,7 +56,7 @@ export default defineComponent({
       let renderContent;
       data.forEach?.((menu, idx) => {
         const optionItem = { ...(menu as DropdownOption) };
-        const onViewIdx = idx - Math.ceil(scrollTopMap[deep] / 30);
+        const onViewIdx = idx - Math.ceil(scrollTopMap[deep] / itemHeight.value);
         const renderIdx = onViewIdx >= 0 ? onViewIdx : idx;
 
         if (optionItem.children) {
@@ -75,17 +76,8 @@ export default defineComponent({
                 isSubmenu={true}
               >
                 <div class={`${dropdownClass.value}__item-content`}>
-                  {props.direction === 'right' ? (
-                    <>
-                      <span class={`${dropdownClass.value}__item-text`}>{getContent(optionItem.content)}</span>
-                      <ChevronRightIcon class={`${dropdownClass.value}__item-direction`} size="16" />
-                    </>
-                  ) : (
-                    <>
-                      <ChevronLeftIcon class={`${dropdownClass.value}__item-direction`} size="16" />
-                      <span class={`${dropdownClass.value}__item-text`}>{getContent(optionItem.content)}</span>
-                    </>
-                  )}
+                  <span class={`${dropdownClass.value}__item-text`}>{getContent(optionItem.content)}</span>
+                  <ChevronRightIcon class={`${dropdownClass.value}__item-direction`} size="16" />
                 </div>
                 <div
                   class={[
@@ -96,7 +88,7 @@ export default defineComponent({
                   ]}
                   style={{
                     position: 'absolute',
-                    top: `${renderIdx * 30}px`,
+                    top: `${renderIdx * itemHeight.value}px`,
                   }}
                 >
                   <div

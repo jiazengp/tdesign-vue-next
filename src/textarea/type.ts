@@ -8,6 +8,11 @@ import { TNode } from '../common';
 
 export interface TdTextareaProps {
   /**
+   * 超出maxlength或maxcharacter之后是否还允许输入
+   * @default false
+   */
+  allowInputOverMax?: boolean;
+  /**
    * 自动聚焦，拉起键盘
    * @default false
    */
@@ -19,7 +24,6 @@ export interface TdTextareaProps {
   autosize?: boolean | { minRows?: number; maxRows?: number };
   /**
    * 是否禁用文本框
-   * @default false
    */
   disabled?: boolean;
   /**
@@ -29,7 +33,7 @@ export interface TdTextareaProps {
   /**
    * 用户最多可以输入的字符个数
    */
-  maxlength?: number;
+  maxlength?: string | number;
   /**
    * 名称，HTML 元素原生属性
    * @default ''
@@ -40,12 +44,12 @@ export interface TdTextareaProps {
    */
   placeholder?: string;
   /**
-   * 文本框是否只读
-   * @default false
+   * 只读状态
    */
   readonly?: boolean;
   /**
    * 文本框状态
+   * @default default
    */
   status?: 'default' | 'success' | 'warning' | 'error';
   /**
@@ -57,13 +61,13 @@ export interface TdTextareaProps {
    */
   value?: TextareaValue;
   /**
-   * 输入框的值
-   */
-  modelValue?: TextareaValue;
-  /**
    * 文本框值，非受控属性
    */
   defaultValue?: TextareaValue;
+  /**
+   * 文本框值
+   */
+  modelValue?: TextareaValue;
   /**
    * 失去焦点时触发
    */
@@ -88,6 +92,10 @@ export interface TdTextareaProps {
    * 释放键盘时触发
    */
   onKeyup?: (value: TextareaValue, context: { e: KeyboardEvent }) => void;
+  /**
+   * 字数超出限制时触发
+   */
+  onValidate?: (context: { error?: 'exceed-maximum' | 'below-minimum' }) => void;
 }
 
 export type TextareaValue = string | number;

@@ -28,14 +28,13 @@ export function getSingleContent(cascaderContext: CascaderContextType): string {
   }
   const path = node && node[0].getPath();
   if (path && path.length) {
-    return showAllLevels ? path.map((node: TreeNode) => node.label).join(' / ') : path[path.length - 1].label;
+    return showAllLevels ? path.map((node: TreeNode) => node.label).join(' / ') : path.at(-1).label;
   }
   return value as string;
 }
 
 /**
  * 多选状态下选中内容
- * @param isHover
  * @param cascaderContext
  * @returns
  */
@@ -51,7 +50,7 @@ export function getMultipleContent(cascaderContext: CascaderContextType) {
   return (value as TreeNodeValue[])
     .map((item: TreeNodeValue) => {
       const node = treeStore.getNodes(item);
-      return showAllLevels ? getFullPathLabel(node[0]) : node[0].label;
+      return showAllLevels ? getFullPathLabel(node[0]) : node[0]?.label;
     })
     .filter((item) => !!item);
 }
@@ -98,7 +97,7 @@ export const getTreeValue = (value: CascaderContextType['value']) => {
     } else if (value.length) {
       treeValue = value as TreeNodeValue[];
     }
-  } else if (value) {
+  } else if (!isEmptyValues(value)) {
     if (isObject(value)) {
       treeValue = [(value as TreeOptionData).value];
     } else {
@@ -119,10 +118,11 @@ export const getCascaderValue = (value: CascaderValue, valueType: TdCascaderProp
   if (valueType === 'single') {
     return value;
   }
+  const val = value as Array<CascaderValue>;
   if (multiple) {
-    return (value as Array<CascaderValue>).map((item: TreeNodeValue[]) => item[item.length - 1]);
+    return val.map((item: TreeNodeValue[]) => item.at(-1));
   }
-  return value[(value as Array<CascaderValue>).length - 1];
+  return val.at(-1);
 };
 
 /**
@@ -143,6 +143,6 @@ export function isEmptyValues(value: unknown): boolean {
  * @returns boolean
  */
 export function isValueInvalid(value: CascaderValue, cascaderContext: CascaderContextType) {
-  const { multiple, showAllLevels } = cascaderContext;
-  return (multiple && !isArray(value)) || (!multiple && isArray(value) && !showAllLevels);
+  const { multiple, showAllLevels, valueType } = cascaderContext;
+  return (multiple && !isArray(value)) || (!multiple && isArray(value) && valueType === 'single' && !showAllLevels);
 }

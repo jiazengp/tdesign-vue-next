@@ -90,12 +90,28 @@ describe('TagInput', () => {
       expect(input.element.getAttribute('placeholder')).toBe('请输入');
     });
 
-    it(':readonly', () => {
+    it(':readonly', async () => {
       const value = ref('123');
+      const tags = ref(['Vue', 'React', 'Vue', 'React', 'Vue', 'React', 'Vue', 'React']);
+
       const wrapper = mount(() => <TagInput readonly inputValue={value.value} />);
       const input = wrapper.find('.t-input__inner');
       value.value = '123123';
       expect(input.element.value).toBe('123');
+
+      // readonly = false and able backspace
+      const onRemoveFnOn = vi.fn();
+      const wrapper1 = mount(() => <TagInput v-model={tags.value} onRemove={onRemoveFnOn} />);
+      wrapper1.find('input').trigger('keydown.backspace');
+      await wrapper1.vm.$nextTick();
+      expect(onRemoveFnOn).toHaveBeenCalled();
+
+      // readonly = true and prevent backspace
+      const onRemoveFnUn = vi.fn();
+      const wrapper2 = mount(() => <TagInput readonly v-model={tags.value} />);
+      wrapper2.find('input').trigger('keydown.backspace');
+      await wrapper2.vm.$nextTick();
+      expect(onRemoveFnUn).not.toHaveBeenCalled();
     });
 
     it(':size', () => {
@@ -131,6 +147,16 @@ describe('TagInput', () => {
       const suffix = wrapper.find('.t-input__suffix');
       expect(suffix.exists()).toBeTruthy();
       expect(suffix.findComponent(AppIcon)).toBeTruthy();
+    });
+
+    it(':prefixIcon', () => {
+      const slots = {
+        prefixIcon: () => <AppIcon />,
+      };
+      const wrapper = mount(() => <TagInput v-slots={slots} />);
+      const prefix = wrapper.find('.t-input__prefix');
+      expect(prefix.exists()).toBeTruthy();
+      expect(prefix.findComponent(AppIcon)).toBeTruthy();
     });
 
     it(':tips', () => {

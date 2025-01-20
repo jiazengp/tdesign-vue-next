@@ -1,4 +1,4 @@
-import { computed, defineComponent, inject, PropType, Slots, ref } from 'vue';
+import { computed, defineComponent, inject, Slots, ref } from 'vue';
 import omit from 'lodash/omit';
 import { Styles } from '../common';
 
@@ -25,10 +25,6 @@ export default defineComponent({
     multiple: TdSelectProps.multiple,
     filterable: TdSelectProps.filterable,
     filter: TdSelectProps.filter,
-    options: {
-      type: Array as PropType<SelectOption[]>,
-      default: (): SelectOption[] => [],
-    },
     scroll: TdSelectProps.scroll,
     size: TdSelectProps.size,
   },
@@ -68,7 +64,7 @@ export default defineComponent({
       return (
         <ul class={`${COMPONENT_NAME.value}__list`}>
           {options.map((item: SelectOptionGroup & TdOptionProps & { slots: Slots } & { $index: number }, index) => {
-            if (item.group) {
+            if (item.children) {
               return (
                 <OptionGroup label={item.group} divider={item.divider}>
                   {renderOptionsContent(item.children)}
@@ -77,7 +73,7 @@ export default defineComponent({
             }
             return (
               <Option
-                {...omit(item, '$index', 'className', 'tagName')}
+                {...omit(item, 'index', '$index', 'className', 'tagName')}
                 {...(isVirtual.value
                   ? {
                       rowIndex: item.$index,
@@ -85,11 +81,12 @@ export default defineComponent({
                       scrollType: props.scroll?.type,
                       isVirtual: isVirtual.value,
                       bufferSize: props.scroll?.bufferSize,
-                      key: `${item.$index || ''}_${index}`,
+                      key: `${item.$index || ''}_${index}_${item.value}`,
                     }
                   : {
                       key: `${index}_${item.value}`,
                     })}
+                index={index}
                 multiple={props.multiple}
                 v-slots={item.slots}
                 onRowMounted={handleRowMounted}
@@ -109,6 +106,9 @@ export default defineComponent({
 
     expose({
       innerRef,
+      visibleData, // 虚拟滚动的展示数据
+      isVirtual,
+      displayOptions, // 非虚拟滚动的展示数据
     });
 
     const renderPanel = (options: SelectOption[], extraStyle?: Styles) => (
@@ -118,10 +118,8 @@ export default defineComponent({
           `${COMPONENT_NAME.value}__dropdown-inner`,
           `${COMPONENT_NAME.value}__dropdown-inner--size-${dropdownInnerSize.value}`,
         ]}
-        onClick={(e) => e.stopPropagation()}
         style={extraStyle}
       >
-        {}
         {/* create option */}
         {showCreateOption.value && renderCreateOption()}
         {/* loading状态 */}
@@ -130,13 +128,10 @@ export default defineComponent({
             defaultNode: <div class={`${COMPONENT_NAME.value}__loading-tips`}>{t(globalConfig.value.loadingText)}</div>,
           })}
         {/* 空状态 */}
-        {!props.loading &&
-          isEmpty.value &&
-          !showCreateOption.value &&
-          renderDefaultTNode('empty', {
-            defaultNode: <div class={`${COMPONENT_NAME.value}__empty`}>{t(globalConfig.value.empty)}</div>,
-          })}
-        {!isEmpty.value && !props.loading && renderOptionsContent(options)}
+        {!props.loading && isEmpty.value && !showCreateOption.value && (
+          <div class={`${COMPONENT_NAME.value}__empty`}>{renderTNodeJSX('empty') || t(globalConfig.value.empty)}</div>
+        )}
+        {!isEmpty.value && renderOptionsContent(options)}
       </div>
     );
     return {

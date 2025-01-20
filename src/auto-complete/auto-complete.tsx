@@ -1,7 +1,7 @@
 import { computed, ref, defineComponent, toRefs, nextTick } from 'vue';
 import props from './props';
 import { TdAutoCompleteProps } from './type';
-import Input, { InputProps, TdInputProps } from '../input';
+import TInput, { InputProps, StrInputProps } from '../input';
 import Popup, { PopupProps } from '../popup';
 import useCommonClassName from '../hooks/useCommonClassName';
 import AutoCompleteOptionList from './option-list';
@@ -9,6 +9,8 @@ import useVModel from '../hooks/useVModel';
 import { useConfig } from '../config-provider/useConfig';
 import { ClassName } from '../common';
 import { useContent, useTNodeJSX } from '../hooks';
+import { useDisabled } from '../hooks/useDisabled';
+import { useReadonly } from '../hooks/useReadonly';
 
 export default defineComponent({
   name: 'TAutoComplete',
@@ -22,7 +24,8 @@ export default defineComponent({
     const renderTNodeJSX = useTNodeJSX();
     const { classPrefix, sizeClassNames } = useCommonClassName();
     const { globalConfig: global } = useConfig('input');
-
+    const isDisabled = useDisabled();
+    const isReadonly = useReadonly();
     const popupVisible = ref();
     const optionListRef = ref();
 
@@ -52,7 +55,7 @@ export default defineComponent({
       return classes;
     });
 
-    const onInputChange: TdInputProps['onChange'] = (value, context) => {
+    const onInputChange: StrInputProps['onChange'] = (value, context) => {
       setTValue(value, context);
     };
 
@@ -65,7 +68,8 @@ export default defineComponent({
       return tProps;
     });
 
-    const onInnerFocus: InputProps['onFocus'] = (value, context) => {
+    const onInnerFocus: StrInputProps['onFocus'] = (value, context) => {
+      if (isReadonly.value || isDisabled.value) return;
       popupVisible.value = true;
       props.onFocus?.({ ...context, value });
       nextTick(() => {
@@ -73,7 +77,7 @@ export default defineComponent({
       });
     };
 
-    const onInnerBlur: InputProps['onBlur'] = (value, context) => {
+    const onInnerBlur: StrInputProps['onBlur'] = (value, context) => {
       props.onBlur?.({ ...context, value });
     };
 
@@ -85,18 +89,19 @@ export default defineComponent({
       props.onCompositionstart?.({ ...context, value });
     };
 
-    const onInnerEnter: InputProps['onEnter'] = (value, context) => {
+    const onInnerEnter: StrInputProps['onEnter'] = (value, context) => {
       props.onEnter?.({ ...context, value });
     };
 
     const onInnerSelect: TdAutoCompleteProps['onSelect'] = (value, context) => {
-      if (props.readonly || props.disabled) return;
+      if (isReadonly.value || isDisabled.value) return;
       popupVisible.value = false;
       setTValue(value, context);
       props.onSelect?.(value, context);
     };
 
     const onPopupVisibleChange: PopupProps['onVisibleChange'] = (visible, { trigger }) => {
+      if (isReadonly.value || isDisabled.value) return;
       if (trigger !== 'trigger-element-click') {
         popupVisible.value = visible;
       }
@@ -105,12 +110,13 @@ export default defineComponent({
     return () => {
       // 触发元素
       const triggerNode = renderContent('default', 'triggerElement') || (
-        <Input
+        <TInput
+          borderless={props.borderless}
           placeholder={props.placeholder ?? global.value.placeholder}
           tips={props.tips}
           status={props.status}
-          readonly={props.readonly}
-          disabled={props.disabled}
+          readonly={isReadonly.value}
+          disabled={isDisabled.value}
           autofocus={props.autofocus}
           clearable={props.clearable}
           onChange={onInputChange}
@@ -143,7 +149,7 @@ export default defineComponent({
       const topContent = renderTNodeJSX('panelTopContent');
       const bottomContent = renderTNodeJSX('panelBottomContent');
       const panelContent = Boolean(topContent || props.options?.length || bottomContent) ? (
-        <div class={`${classPrefix.value}-autocomplete__panel`}>
+        <div class={`${classPrefix.value}-auto-complete__panel`}>
           {topContent}
           {listContent}
           {bottomContent}

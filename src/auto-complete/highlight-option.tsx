@@ -1,15 +1,22 @@
 import { computed, defineComponent } from 'vue';
+import type { PropType } from 'vue';
 import { usePrefixClass } from '../hooks/useConfig';
 import isString from 'lodash/isString';
+import escapeRegExp from 'lodash/escapeRegExp';
+
+export interface HighlightOptionProps {
+  content: string;
+  keyword: string;
+}
 
 export default defineComponent({
   name: 'HighlightOption',
 
   props: {
     /** 联想词 */
-    content: String,
+    content: String as PropType<HighlightOptionProps['content']>,
     /** 搜索词 */
-    keyword: String,
+    keyword: String as PropType<HighlightOptionProps['keyword']>,
   },
 
   setup(props) {
@@ -18,7 +25,7 @@ export default defineComponent({
       const { content, keyword } = props;
       if (!content) return { list: [] };
       if (!isString(content) || !keyword) return { list: [content] };
-      const regExp = new RegExp(keyword, 'i');
+      const regExp = new RegExp(escapeRegExp(keyword), 'i');
       const splitKeyword = content.match(regExp)?.[0];
       return {
         list: content.split(splitKeyword),

@@ -12,10 +12,15 @@ export default {
   activeIndex: {
     type: Number,
   },
+  /** 无边框模式 */
+  borderless: Boolean,
   /** 是否可清空 */
   clearable: Boolean,
   /** 是否禁用范围输入框 */
-  disabled: Boolean,
+  disabled: {
+    type: Boolean,
+    default: undefined,
+  },
   /** 指定输入框展示值的格式 */
   format: {
     type: [Array, Function] as PropType<TdRangeInputProps['format']>,
@@ -37,7 +42,10 @@ export default {
     type: Function as PropType<TdRangeInputProps['prefixIcon']>,
   },
   /** 只读状态 */
-  readonly: Boolean,
+  readonly: {
+    type: Boolean,
+    default: undefined,
+  },
   /** 范围分隔符 */
   separator: {
     type: [String, Function] as PropType<TdRangeInputProps['separator']>,
@@ -78,11 +86,11 @@ export default {
   /** 范围输入框的值 */
   value: {
     type: Array as PropType<TdRangeInputProps['value']>,
-    default: undefined,
+    default: undefined as TdRangeInputProps['value'],
   },
   modelValue: {
     type: Array as PropType<TdRangeInputProps['value']>,
-    default: undefined,
+    default: undefined as TdRangeInputProps['value'],
   },
   /** 范围输入框的值，非受控属性 */
   defaultValue: {

@@ -15,11 +15,15 @@ export default {
   /** 输入框的值 */
   inputValue: {
     type: Array as PropType<TdRangeInputPopupProps['inputValue']>,
-    default: undefined,
+    default: undefined as TdRangeInputPopupProps['inputValue'],
   },
   /** 输入框的值，非受控属性 */
   defaultInputValue: {
     type: Array as PropType<TdRangeInputPopupProps['defaultInputValue']>,
+  },
+  /** 左侧文本 */
+  label: {
+    type: [String, Function] as PropType<TdRangeInputPopupProps['label']>,
   },
   /** 下拉框内容，可完全自定义 */
   panel: {
@@ -36,7 +40,10 @@ export default {
     type: Object as PropType<TdRangeInputPopupProps['rangeInputProps']>,
   },
   /** 只读状态，值为真会隐藏输入框，且无法打开下拉框 */
-  readonly: Boolean,
+  readonly: {
+    type: Boolean,
+    default: undefined,
+  },
   /** 输入框状态 */
   status: {
     type: String as PropType<TdRangeInputPopupProps['status']>,

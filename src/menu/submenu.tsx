@@ -11,6 +11,7 @@ import {
   toRefs,
   reactive,
   nextTick,
+  Transition,
 } from 'vue';
 import props from './submenu-props';
 import { renderContent, renderTNodeJSX } from '../utils/render-tnode';
@@ -21,6 +22,7 @@ import { usePrefixClass } from '../hooks/useConfig';
 import { Popup, PopupPlacement } from '../popup';
 import isFunction from 'lodash/isFunction';
 import { TdSubmenuProps } from './type';
+import useCollapseAnimation from '../hooks/useCollapseAnimation';
 
 export default defineComponent({
   name: 'TSubmenu',
@@ -50,6 +52,7 @@ export default defineComponent({
     const popupWrapperRef = ref<HTMLElement>();
     const subPopupRef = ref<HTMLElement>();
     const submenuRef = ref<HTMLElement>();
+    const transitionClass = usePrefixClass('slide-down');
     useRipple(submenuRef, rippleColor);
 
     const classes = computed(() => [
@@ -107,6 +110,7 @@ export default defineComponent({
       setTimeout(() => {
         if (!popupVisible.value) {
           open(props.value);
+
           // popupVisible设置为TRUE之后打开popup，因此需要在nextTick中确保可以拿到ref值
           nextTick().then(() => {
             passSubPopupRefToParent(popupWrapperRef.value);
@@ -214,6 +218,8 @@ export default defineComponent({
       isNested,
       classes,
       subClass,
+      isOpen,
+      transitionClass,
       arrowClass,
       overlayInnerClassName,
       overlayClassName,
@@ -252,9 +258,10 @@ export default defineComponent({
       const slots = {
         content: () => popupWrapper,
       };
+
       const realPopup = (
         <Popup
-          props={this.popupProps}
+          {...((this.popupProps ?? {}) as TdSubmenuProps['popupProps'])}
           overlayInnerClassName={[...this.overlayInnerClassName]}
           overlayClassName={[...this.overlayClassName]}
           visible={this.popupVisible}
@@ -306,6 +313,8 @@ export default defineComponent({
         parent = parent.parent;
       }
 
+      const { beforeEnter, enter, afterEnter, beforeLeave, leave, afterLeave } = useCollapseAnimation();
+
       const needRotate = this.mode === 'popup' && this.isNested;
 
       const normalSubmenu = [
@@ -319,9 +328,19 @@ export default defineComponent({
             />
           )}
         </div>,
-        <ul class={this.subClass} style={{ '--padding-left': `${paddingLeft}px` }}>
-          {child}
-        </ul>,
+        <Transition
+          name={this.transitionClass}
+          onBeforeEnter={beforeEnter}
+          onEnter={enter}
+          onAfterEnter={afterEnter}
+          onBeforeLeave={beforeLeave}
+          onLeave={leave}
+          onAfterLeave={afterLeave}
+        >
+          <ul v-show={this.isOpen} class={this.subClass} style={{ '--padding-left': `${paddingLeft}px` }}>
+            {child}
+          </ul>
+        </Transition>,
       ];
 
       const triggerElement = [

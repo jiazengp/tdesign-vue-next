@@ -25,7 +25,7 @@ export default {
   default: {
     type: [String, Function] as PropType<TdCheckboxProps['default']>,
   },
-  /** 是否禁用组件 */
+  /** 是否禁用组件。如果父组件存在 CheckboxGroup，默认值由 CheckboxGroup.disabled 控制。优先级：Checkbox.disabled > CheckboxGroup.disabled > Form.disabled */
   disabled: {
     type: Boolean,
     default: undefined,
@@ -36,16 +36,26 @@ export default {
   label: {
     type: [String, Function] as PropType<TdCheckboxProps['label']>,
   },
+  /** 是否启用懒加载。数据量大时建议开启；加载复杂内容或大量图片时建议开启 */
+  lazyLoad: Boolean,
   /** HTML 元素原生属性 */
   name: {
     type: String,
     default: '',
   },
   /** 只读状态 */
-  readonly: Boolean,
+  readonly: {
+    type: Boolean,
+    default: undefined,
+  },
+  /** HTML 原生属性 */
+  title: {
+    type: String,
+    default: '',
+  },
   /** 多选框的值 */
   value: {
-    type: [String, Number] as PropType<TdCheckboxProps['value']>,
+    type: [String, Number, Boolean] as PropType<TdCheckboxProps['value']>,
   },
   /** 值变化时触发 */
   onChange: Function as PropType<TdCheckboxProps['onChange']>,

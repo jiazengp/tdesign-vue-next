@@ -14,7 +14,8 @@ export default {
   borderless: Boolean,
   /** 是否允许清空 */
   clearable: Boolean,
-  /** 多选情况下，用于设置折叠项内容，默认为 `+N`。如果需要悬浮就显示其他内容，可以使用 collapsedItems 自定义 */
+  /** 多选情况下，用于设置折叠项内容，默认为 `+N`。如果需要悬浮就显示其他内容，可以使用 collapsedItems 自定义。
+   `value` 表示当前存在的所有标签，`collapsedSelectedItems` 表示折叠的标签，`count` 表示折叠的数量，`onClose` 表示移除标签的事件回调 */
   collapsedItems: {
     type: Function as PropType<TdTreeSelectProps['collapsedItems']>,
   },
@@ -24,7 +25,10 @@ export default {
     default: (): TdTreeSelectProps['data'] => [],
   },
   /** 是否禁用组件 */
-  disabled: Boolean,
+  disabled: {
+    type: Boolean,
+    default: undefined,
+  },
   /** 当下拉列表为空时显示的内容 */
   empty: {
     type: [String, Function] as PropType<TdTreeSelectProps['empty']>,
@@ -48,6 +52,10 @@ export default {
   /** 输入框的值，非受控属性 */
   defaultInputValue: {
     type: [String, Number] as PropType<TdTreeSelectProps['defaultInputValue']>,
+  },
+  /** 用来定义 `value / label / children / disabled` 在 `data` 数据中对应的字段别名，示例：`{ value: 'key', label 'name', children: 'list' }` */
+  keys: {
+    type: Object as PropType<TdTreeSelectProps['keys']>,
   },
   /** 是否正在加载数据 */
   loading: Boolean,
@@ -87,7 +95,10 @@ export default {
     type: Function as PropType<TdTreeSelectProps['prefixIcon']>,
   },
   /** 只读状态，值为真会隐藏输入框，且无法打开下拉框 */
-  readonly: Boolean,
+  readonly: {
+    type: Boolean,
+    default: undefined,
+  },
   /** 透传 SelectInput 筛选器输入框组件的全部属性 */
   selectInputProps: {
     type: Object as PropType<TdTreeSelectProps['selectInputProps']>,
@@ -100,6 +111,14 @@ export default {
       if (!val) return true;
       return ['small', 'medium', 'large'].includes(val);
     },
+  },
+  /** 后置图标前的后置内容 */
+  suffix: {
+    type: [String, Function] as PropType<TdTreeSelectProps['suffix']>,
+  },
+  /** 组件后置图标 */
+  suffixIcon: {
+    type: Function as PropType<TdTreeSelectProps['suffixIcon']>,
   },
   /** 【开发中】透传 Tag 标签组件全部属性 */
   tagProps: {

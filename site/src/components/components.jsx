@@ -3,10 +3,15 @@ import semver from 'semver';
 import siteConfig from '../../site.config';
 import packageJson from '@/package.json';
 
-const { docs: routerList } = JSON.parse(JSON.stringify(siteConfig).replace(/component:.+/g, ''));
+const { docs, enDocs } = JSON.parse(JSON.stringify(siteConfig).replace(/component:.+/g, ''));
+
+const docsMap = {
+  zh: docs,
+  en: enDocs,
+};
 
 const currentVersion = packageJson.version.replace(/\./g, '_');
-const registryUrl = 'https://mirrors.tencent.com/npm/tdesign-vue-next';
+const registryUrl = 'https://service-edbzjd6y-1257786608.hk.apigw.tencentcs.com/release/npm/versions/tdesign-vue-next';
 
 // 过滤小版本号
 function getVersions(versions = []) {
@@ -37,11 +42,14 @@ export default defineComponent({
       const { loaded } = this;
       return { visibility: loaded ? 'visible' : 'hidden' };
     },
+    lang() {
+      return this.$route?.meta?.lang || 'zh';
+    },
   },
 
   mounted() {
     this.$refs.tdHeader.framework = 'vue-next';
-    this.$refs.tdDocAside.routerList = routerList;
+    this.$refs.tdDocAside.routerList = docsMap[this.lang];
     this.$refs.tdDocAside.onchange = ({ detail }) => {
       if (this.$route.path === detail) return;
       this.loaded = false;

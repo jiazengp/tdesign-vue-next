@@ -6,6 +6,7 @@
 
 import { InputProps } from '../input';
 import { PopupProps } from '../popup';
+import { SelectInputProps } from '../select-input';
 import { TimePickerProps } from '../time-picker';
 import { Dayjs } from 'dayjs';
 import { RangeInputProps } from '../range-input';
@@ -17,6 +18,11 @@ export interface TdDatePickerProps {
    * @default false
    */
   allowInput?: boolean;
+  /**
+   * 无边框模式
+   * @default false
+   */
+  borderless?: boolean;
   /**
    * 是否显示清除按钮
    * @default false
@@ -53,10 +59,19 @@ export interface TdDatePickerProps {
    */
   inputProps?: InputProps;
   /**
+   * 左侧文本
+   */
+  label?: string | TNode;
+  /**
    * 选择器模式
    * @default date
    */
   mode?: 'year' | 'quarter' | 'month' | 'week' | 'date';
+  /**
+   * 决定在日期时间选择器的场景下是否需要点击确认按钮才完成选择动作，默认为`true`
+   * @default true
+   */
+  needConfirm?: boolean;
   /**
    * 占位符
    */
@@ -78,6 +93,15 @@ export interface TdDatePickerProps {
    * @default bottom
    */
   presetsPlacement?: 'left' | 'top' | 'right' | 'bottom';
+  /**
+   * 只读状态
+   * @default undefined
+   */
+  readonly?: boolean;
+  /**
+   * 透传 SelectInput 筛选器输入框组件的全部属性
+   */
+  selectInputProps?: SelectInputProps;
   /**
    * 输入框尺寸
    * @default medium
@@ -116,6 +140,10 @@ export interface TdDatePickerProps {
    */
   modelValue?: DateValue;
   /**
+   * 自定义选中项呈现的内容
+   */
+  valueDisplay?: string | TNode<{ value: DateValue; displayValue?: DateValue }>;
+  /**
    * 用于格式化日期的值，仅支持部分格式，时间戳、日期等。⚠️ `YYYYMMDD` 这种格式不支持，请勿使用，如果希望支持可以给 `dayjs` 提个 PR。注意和 `format` 的区别，`format` 仅用于处理日期在页面中呈现的格式。`ValueTypeEnum` 即将废弃，请更为使用 `DatePickerValueType`
    * @default ''
    */
@@ -128,6 +156,10 @@ export interface TdDatePickerProps {
    * 选中值发生变化时触发
    */
   onChange?: (value: DateValue, context: { dayjsValue?: Dayjs; trigger?: DatePickerTriggerSource }) => void;
+  /**
+   * 如果存在“确定”按钮，则点击“确定”按钮时触发
+   */
+  onConfirm?: (context: { date: Date; e: MouseEvent }) => void;
   /**
    * 输入框获得焦点时触发
    */
@@ -148,6 +180,16 @@ export interface TdDateRangePickerProps {
    * @default false
    */
   allowInput?: boolean;
+  /**
+   * 无边框模式
+   * @default false
+   */
+  borderless?: boolean;
+  /**
+   * 默认的日期选择交互是根据点击前后日期的顺序来决定并且会加以限制。比如：用户先点击开始时间输入框，选择了一个日期例如2020-05-15，紧接着交互会自动将焦点跳到结束日期输入框，等待用户选择结束时间。此时用户只能选择大于2020-05-15的日期（之前的日期会被灰态禁止点击，限制用户的点击）。当该值传递`true`时，则取消该限制。
+   * @default false
+   */
+  cancelRangeSelectLimit?: boolean;
   /**
    * 是否显示清除按钮
    * @default false
@@ -181,10 +223,19 @@ export interface TdDateRangePickerProps {
    */
   format?: string;
   /**
+   * 左侧文本
+   */
+  label?: string | TNode;
+  /**
    * 选择器模式
    * @default date
    */
   mode?: 'year' | 'quarter' | 'month' | 'week' | 'date';
+  /**
+   * 决定在日期时间区间选择器的场景下是否需要点击确认按钮才完成选择动作，默认为 `true`
+   * @default true
+   */
+  needConfirm?: boolean;
   /**
    * 在开始日期选中之前，面板是否显示预选状态，即是否高亮预选日期
    * @default true
@@ -211,6 +262,11 @@ export interface TdDateRangePickerProps {
    * @default bottom
    */
   presetsPlacement?: 'left' | 'top' | 'right' | 'bottom';
+  /**
+   * 只读状态
+   * @default undefined
+   */
+  readonly?: boolean;
   /**
    * 透传给范围输入框 RangeInput 组件的参数
    */
@@ -279,6 +335,10 @@ export interface TdDateRangePickerProps {
    */
   onChange?: (value: DateRangeValue, context: { dayjsValue?: Dayjs[]; trigger?: DatePickerTriggerSource }) => void;
   /**
+   * 如果存在“确定”按钮，则点击“确定”按钮时触发
+   */
+  onConfirm?: (context: { date: Date[]; e: MouseEvent; partial: DateRangePickerPartial }) => void;
+  /**
    * 输入框获得焦点时触发
    */
   onFocus?: (context: { value: DateRangeValue; partial: DateRangePickerPartial; e: FocusEvent }) => void;
@@ -327,7 +387,7 @@ export interface TdDatePickerPanelProps
     context: { dayjsValue?: Dayjs; e?: MouseEvent; trigger?: DatePickerTriggerSource },
   ) => void;
   /**
-   * 如果存在“确认”按钮，则点击“确认”按钮时触发
+   * 如果存在“确定”按钮，则点击“确定”按钮时触发
    */
   onConfirm?: (context: { date: Date; e: MouseEvent }) => void;
   /**
@@ -394,7 +454,7 @@ export interface TdDateRangePickerPanelProps
     },
   ) => void;
   /**
-   * 如果存在“确认”按钮，则点击“确认”按钮时触发
+   * 如果存在“确定”按钮，则点击“确定”按钮时触发
    */
   onConfirm?: (context: { date: Date[]; e: MouseEvent }) => void;
   /**

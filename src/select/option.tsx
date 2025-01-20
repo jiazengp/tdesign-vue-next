@@ -1,10 +1,10 @@
-import { defineComponent, ref, computed, inject, onMounted, onBeforeUnmount } from 'vue';
+import { defineComponent, ref, computed, inject, onMounted, onBeforeUnmount, getCurrentInstance } from 'vue';
 
 import props from './option-props';
 import Checkbox from '../checkbox/index';
 
 // hooks
-import { useFormDisabled } from '../form/hooks';
+import { useDisabled } from '../hooks/useDisabled';
 import useRipple from '../hooks/useRipple';
 import { useContent } from '../hooks/tnode';
 import { usePrefixClass, useCommonClassName } from '../hooks/useConfig';
@@ -30,14 +30,18 @@ export default defineComponent({
 
   setup(props, context) {
     const selectProvider = inject(selectInjectKey);
-    const formDisabled = useFormDisabled();
+    const formDisabled = useDisabled();
+    const { vnode } = getCurrentInstance();
 
+    const isReachMax = computed(
+      () =>
+        selectProvider.value.max !== 0 &&
+        selectProvider.value.max <= (selectProvider.value.selectValue as SelectValue[]).length,
+    );
     const disabled = computed(
       () =>
         formDisabled.value ||
-        (props.multiple &&
-          selectProvider.value.max <= (selectProvider.value.selectValue as SelectValue[]).length &&
-          selectProvider.value.max !== 0),
+        (props.multiple && isReachMax.value && !isSelected.value && !selectProvider.value.isCheckAll),
     );
 
     const renderContent = useContent();
@@ -67,7 +71,7 @@ export default defineComponent({
         [STATUS.value.disabled]: disabled.value,
         [STATUS.value.selected]: isSelected.value,
         [`${selectName.value}-option__hover`]:
-          (isHover.value || selectProvider.value.hoverIndex === props.index) && !disabled.value && !isSelected.value,
+          (isHover.value || selectProvider.value.hoverIndex === props.index) && !disabled.value,
       },
     ]);
 
@@ -80,17 +84,18 @@ export default defineComponent({
         e.preventDefault();
         return;
       }
-      e.stopPropagation();
 
       if (props.createAble) {
         selectProvider.value.handleCreate?.(props.value);
         if (selectProvider.value.multiple) {
-          (selectProvider.value.selectValue as SelectValue[]).push(props.value);
-          selectProvider.value.handleValueChange(selectProvider.value.selectValue, {
-            selectedOptions: selectProvider.value.getSelectedOptions(),
-            trigger: 'check',
-            e,
-          });
+          selectProvider.value.handleValueChange(
+            [...(selectProvider.value.selectValue as SelectValue[]), props.value],
+            {
+              selectedOptions: selectProvider.value.getSelectedOptions(),
+              trigger: 'check',
+              e,
+            },
+          );
           return;
         }
       }
@@ -102,6 +107,7 @@ export default defineComponent({
         e,
       });
       selectProvider.value.handlePopupVisibleChange(false, { e });
+      selectProvider.value.emitBlur(e);
     };
 
     const handleCheckboxClick = (val: boolean, context: { e: MouseEvent | KeyboardEvent }) => {
@@ -118,9 +124,17 @@ export default defineComponent({
         trigger: val ? 'check' : 'uncheck',
         e: context.e,
       });
-      if (!selectProvider.value.reserveKeyword) {
-        selectProvider.value.handlerInputChange('');
+    };
+
+    const renderTitle = () => {
+      const vProps = vnode.props || {};
+      // 如果设置了title 说明希望自己控制title的展示
+      if (Reflect.has(vProps, 'title')) {
+        return props.title;
       }
+      if (typeof labelText.value === 'string') return labelText.value;
+
+      return null;
     };
 
     // 处理虚拟滚动节点挂载
@@ -149,7 +163,7 @@ export default defineComponent({
         <li
           ref={liRef}
           class={classes.value}
-          title={props.title || `${labelText.value}`}
+          title={renderTitle()}
           onMouseenter={() => (isHover.value = true)}
           onMouseleave={() => (isHover.value = false)}
           onClick={handleClick}
@@ -157,7 +171,7 @@ export default defineComponent({
           {selectProvider && props.multiple ? (
             <Checkbox
               checked={isSelected.value}
-              disabled={disabled.value && !isSelected.value}
+              disabled={disabled.value}
               onChange={handleCheckboxClick}
               indeterminate={isIndeterminate.value}
             >

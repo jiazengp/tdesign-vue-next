@@ -6,7 +6,7 @@
       :key="item.value"
       :style="{
         width: '100%',
-        height: '100%',
+        height: `${item.value === 'slider' ? '100%' : 'auto'}`, // slider vertical 布局时，高度通过百分比获取，需要容器指定 height
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -19,6 +19,8 @@
 
 <script setup lang="jsx">
 import { ref, compile, onMounted, computed, onBeforeUnmount, watchEffect } from 'vue';
+import * as prettier from 'prettier/standalone';
+import * as parserHtml from 'prettier/parser-html';
 
 const stringifyProp = (name, value) => {
   if (value === true) return name; // 为 true 只展示 name
@@ -73,6 +75,14 @@ const defaultProps = ref(
   }, {}),
 );
 
+function codeFormat(code, options = {}) {
+  return prettier.format(code, {
+    parser: 'vue',
+    ...options,
+    plugins: [parserHtml],
+  });
+}
+
 const usageCode = computed(() => {
   const propsStr = Object.keys(changedProps.value)
     .map((name) => `${stringifyProp(name, changedProps.value[name])}`)
@@ -80,6 +90,6 @@ const usageCode = computed(() => {
   const trueCode = props.code.replace(/\s*v-bind="configProps"/g, () =>
     propsStr.length ? `\n  ${propsStr.join('\n  ')}` : '',
   );
-  return trueCode;
+  return codeFormat(trueCode);
 });
 </script>
